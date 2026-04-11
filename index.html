@@ -74,14 +74,27 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .cls:active{opacity:.7;}
 .cls .cname{font-weight:600;font-size:10px;line-height:1.3;}
 .cls .croom{font-size:9px;opacity:.72;}
+.cls .multi{font-size:8px;opacity:.7;margin-top:1px;}
+.cls.continuation{height:100%;padding:0;margin:0;width:100%;box-sizing:border-box;}
+.cls.continuation.continuation-head{border-radius:8px 8px 0 0;}
+.cls.continuation.continuation-mid{border-radius:0;}
+.cls.continuation.continuation-bottom{border-radius:0 0 8px 8px;}
+.cls.continuation .cname,.cls.continuation .croom,.cls.continuation .multi{display:none;}
+
 .cls-blue{background:#E6F1FB;color:#0C447C;} .cls-green{background:#EAF3DE;color:#27500A;}
 .cls-amber{background:#FAEEDA;color:#633806;} .cls-purple{background:#EEEDFE;color:#3C3489;}
 .cls-red{background:#FCEBEB;color:#791F1F;} .cls-teal{background:#E1F5EE;color:#085041;}
-.cls-pink{background:#FBEAF0;color:#72243E;}
+.cls-pink{background:#FBEAF0;color:#72243E;} .cls-orange{background:#FFF3E0;color:#E65100;}
+.cls-yellow{background:#FFFDE7;color:#F57F17;} .cls-cyan{background:#E0F7FA;color:#006064;}
+.cls-gray{background:#F5F5F5;color:#424242;} .cls-indigo{background:#E8EAF6;color:#1A237E;}
+.cls-lime{background:#F9FBE7;color:#827717;} .cls-brown{background:#EFEBE9;color:#3E2723;}
 .dark .cls-blue{background:#0C2040;color:#85B7EB;} .dark .cls-green{background:#1A2E0A;color:#97C459;}
 .dark .cls-amber{background:#2A1E05;color:#EF9F27;} .dark .cls-purple{background:#1E1A40;color:#AFA9EC;}
 .dark .cls-red{background:#2A0A0A;color:#F09595;} .dark .cls-teal{background:#0A2018;color:#5DCAA5;}
-.dark .cls-pink{background:#2A1020;color:#ED93B1;}
+.dark .cls-pink{background:#2A1020;color:#ED93B1;} .dark .cls-orange{background:#2A1E05;color:#FFB74D;}
+.dark .cls-yellow{background:#2A1E05;color:#FFEB3B;} .dark .cls-cyan{background:#0A2018;color:#4DD0E1;}
+.dark .cls-gray{background:#1C1C1E;color:#BDBDBD;} .dark .cls-indigo{background:#1A1A2E;color:#7986CB;}
+.dark .cls-lime{background:#1A2E0A;color:#D4E157;} .dark .cls-brown{background:#2A1E1A;color:#A1887F;}
 
 .bottom-nav{display:flex;border-top:0.5px solid var(--border);background:var(--bg);padding-bottom:var(--safe-bottom);flex-shrink:0;}
 .nav-item{flex:1;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:transparent;color:var(--text2);}
@@ -233,7 +246,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       </div>
       <div class="month-nav">
         <button class="month-arrow" onclick="closeSemesterEditor()">×</button>
-        <button class="month-today" onclick="openClassModal()">新增課程</button>
+        <button class="month-today" onclick="openTemplateModal()">新增課程定義</button>
       </div>
     </div>
     <div style="padding:0 16px 16px 16px;overflow-y:auto;flex:1;">
@@ -318,6 +331,17 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
     <div class="frow"><label class="flabel">星期（可多選）</label><div class="day-checks" id="day-checks"></div></div>
     <div class="frow"><label class="flabel">顏色</label><div class="colors" id="color-picks"></div></div>
     <div class="mactions"><button class="mbtn-c" onclick="closeModal('modal-class')">取消</button><button class="mbtn-s" onclick="saveClass()">新增課程</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-template">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mtitle">新增課程定義</div>
+    <div class="frow"><label class="flabel">課程名稱</label><input class="finput" id="template-name" placeholder="例：微積分"/></div>
+    <div class="frow"><label class="flabel">教室</label><input class="finput" id="template-room" placeholder="例：理學院 101"/></div>
+    <div class="frow"><label class="flabel">顏色</label><div class="colors" id="template-color-picks"></div></div>
+    <div class="mactions"><button class="mbtn-c" onclick="closeModal('modal-template')">取消</button><button class="mbtn-s" onclick="saveTemplate()">儲存課程定義</button></div>
   </div>
 </div>
 
@@ -463,18 +487,47 @@ const DEFAULT_PERIODS=[
   {label:'第7節',time:'13:00'},{label:'第8節',time:'13:50'},
 ];
 let PERIODS = null;
+let PERIOD_SETTINGS = null;
 const COLORS=[
   {key:'blue',dot:'#378ADD'},{key:'purple',dot:'#7F77DD'},{key:'green',dot:'#639922'},
   {key:'amber',dot:'#BA7517'},{key:'red',dot:'#E24B4A'},{key:'teal',dot:'#1D9E75'},{key:'pink',dot:'#D4537E'},
+  {key:'orange',dot:'#FF9500'},{key:'yellow',dot:'#FFCC00'},{key:'cyan',dot:'#00BCD4'},
+  {key:'gray',dot:'#9E9E9E'},{key:'indigo',dot:'#3F51B5'},{key:'lime',dot:'#CDDC39'},{key:'brown',dot:'#795548'},
 ];
 const DEF=[];
 function ld(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
 function sv(k,v){localStorage.setItem(k,JSON.stringify(v));}
 
-let semesters=ld('semesters',{'預設':{'courses':DEF,'created':new Date().toISOString()}}),currentSemester='預設';
+function normalizeSemesters(){
+  Object.entries(semesters).forEach(([k,v])=>{
+    if(!v.templates){
+      const uniq=[];
+      (v.courses||[]).forEach(c=>{
+        if(!uniq.some(t=>t.name===c.name&&t.room===c.room&&t.color===c.color)){
+          uniq.push({id:Date.now()+Math.random(),name:c.name,room:c.room,color:c.color});
+        }
+      });
+      v.templates=uniq;
+    }
+  });
+}
+
+let semesters=ld('semesters',{'預設':{'courses':DEF,'templates':[],'created':new Date().toISOString()}}),currentSemester='預設';
+normalizeSemesters();
 let classes=semesters[currentSemester]?.courses||DEF,homework=ld('hw',[]),holidays=ld('hols',{}),settings=ld('cfg',{dark:false,notif:false,notifMinutes:10});
+PERIOD_SETTINGS = ld('periodSettings',{startHour:8,startMin:0,durationMin:50,breakMin:10,numPeriods:8,morningCount:4});
 PERIODS = ld('periods', DEFAULT_PERIODS);
-let selColor='blue',selDays=[],weekOffset=0,monthOffset=0;
+if(PERIODS.length!==PERIOD_SETTINGS.numPeriods){
+  PERIODS=[];
+  let totalMin=PERIOD_SETTINGS.startHour*60+PERIOD_SETTINGS.startMin;
+  for(let i=0;i<PERIOD_SETTINGS.numPeriods;i++){
+    const h=Math.floor(totalMin/60);
+    const m=totalMin%60;
+    PERIODS.push({label:'第'+(i+1)+'節',time:String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')});
+    totalMin+=PERIOD_SETTINGS.durationMin+PERIOD_SETTINGS.breakMin;
+  }
+}
+let selColor='blue',selDays=[],weekOffset=0,monthOffset=0,selectedTemplateIndex=null;
 const BASE=new Date(2026,3,13);
 
 // Dark mode
@@ -572,16 +625,21 @@ function renderGrid(){
         const c=matching[0];
         if(pi===c.start){
           const card=document.createElement('div');
-          card.className='cls cls-'+c.color;
-          card.style.minHeight=((c.end-c.start+1)*54-4)+'px';
-          card.innerHTML=`<span class="cname">${c.name}</span><span class="croom">${c.room}</span>`;
+          card.className='cls cls-'+c.color+(c.end>c.start?' continuation-head':'');
+          card.style.height='100%';
+          card.innerHTML=`<span class="cname">${c.name}</span><span class="croom">${c.room}</span>${c.end>c.start?'<span class="multi">↓</span>':''}`;
           let longPressTimer=null;
           const startLongPress=()=>{longPressTimer=setTimeout(()=>{openEditClassModal(c);},500);};
           const endLongPress=()=>{if(longPressTimer)clearTimeout(longPressTimer);};
           card.addEventListener('mousedown',startLongPress);card.addEventListener('mouseup',endLongPress);card.addEventListener('mouseleave',endLongPress);
           card.addEventListener('touchstart',startLongPress);card.addEventListener('touchend',endLongPress);
           cell.appendChild(card);
-        } else cell.style.padding='0';
+        } else {
+          cell.style.padding='0';
+          const part=document.createElement('div');
+          part.className='cls cls-'+c.color+' continuation'+(pi===c.end?' continuation-bottom':' continuation-mid');
+          cell.appendChild(part);
+        }
       }
       grid.appendChild(cell);
     });
@@ -611,6 +669,7 @@ function buildClassForm(){
 function saveSemester(){
   if(currentSemester&&semesters[currentSemester]){
     semesters[currentSemester].courses=classes;
+    semesters[currentSemester].templates=semesters[currentSemester].templates||[];
     sv('semesters',semesters);
   }
 }
@@ -621,7 +680,7 @@ function saveClass(){
   const s=parseInt(document.getElementById('in-start').value),e=parseInt(document.getElementById('in-end').value);
   if(!name||!selDays.length){alert('請填寫名稱並選擇星期');return;}
   classes.push({name,room:room||'未指定',start:Math.min(s,e),end:Math.max(s,e),days:[...selDays],color:selColor});
-  saveSemester();closeModal('modal-class');renderGrid();
+  saveSemester();closeModal('modal-class');renderGrid();updateSemesterEditor();
 }
 
 // Edit class
@@ -654,7 +713,7 @@ function saveEditClass(){
   if(!name||!selDays.length){alert('請填寫名稱並選擇星期');return;}
   if(editingClassIndex!==-1){
     classes[editingClassIndex]={name,room:room||'未指定',start:Math.min(s,e),end:Math.max(s,e),days:[...selDays],color:selColor};
-    saveSemester();closeModal('modal-edit-class');renderGrid();
+    saveSemester();closeModal('modal-edit-class');renderGrid();updateSemesterEditor();
     editingClassIndex=null;
   }
 }
@@ -662,7 +721,7 @@ function deleteEditClass(){
   if(!confirm('確定要刪除這門課程嗎？')){return;}
   if(editingClassIndex!==-1){
     classes.splice(editingClassIndex,1);
-    saveSemester();closeModal('modal-edit-class');renderGrid();
+    saveSemester();closeModal('modal-edit-class');renderGrid();updateSemesterEditor();
     editingClassIndex=null;
   }
 }
@@ -877,8 +936,8 @@ function buildCanvas(){
     ctx.fillStyle=dk2?'#f2f2f7':'#111';ctx.font='600 14px sans-serif';
     ctx.fillText('週'+d+' '+dt.getDate(),TW+i*DW+DW/2,26);
   });
-  const CC={blue:['#E6F1FB','#0C447C'],purple:['#EEEDFE','#3C3489'],green:['#EAF3DE','#27500A'],amber:['#FAEEDA','#633806'],red:['#FCEBEB','#791F1F'],teal:['#E1F5EE','#085041'],pink:['#FBEAF0','#72243E']};
-  const DC={blue:['#0C2040','#85B7EB'],purple:['#1E1A40','#AFA9EC'],green:['#1A2E0A','#97C459'],amber:['#2A1E05','#EF9F27'],red:['#2A0A0A','#F09595'],teal:['#0A2018','#5DCAA5'],pink:['#2A1020','#ED93B1']};
+  const CC={blue:['#E6F1FB','#0C447C'],purple:['#EEEDFE','#3C3489'],green:['#EAF3DE','#27500A'],amber:['#FAEEDA','#633806'],red:['#FCEBEB','#791F1F'],teal:['#E1F5EE','#085041'],pink:['#FBEAF0','#72243E'],orange:['#FFF3E0','#E65100'],yellow:['#FFFDE7','#F57F17'],cyan:['#E0F7FA','#006064'],gray:['#F5F5F5','#424242'],indigo:['#E8EAF6','#1A237E'],lime:['#F9FBE7','#827717'],brown:['#EFEBE9','#3E2723']};
+  const DC={blue:['#0C2040','#85B7EB'],purple:['#1E1A40','#AFA9EC'],green:['#1A2E0A','#97C459'],amber:['#2A1E05','#EF9F27'],red:['#2A0A0A','#F09595'],teal:['#0A2018','#5DCAA5'],pink:['#2A1020','#ED93B1'],orange:['#2A1E05','#FFB74D'],yellow:['#2A1E05','#FFEB3B'],cyan:['#0A2018','#4DD0E1'],gray:['#1C1C1E','#BDBDBD'],indigo:['#1A1A2E','#7986CB'],lime:['#1A2E0A','#D4E157'],brown:['#2A1E1A','#A1887F']};
   PERIODS.forEach((p,pi)=>{
     const y=HR+pi*RH;
     ctx.strokeStyle=dk2?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.07)';ctx.lineWidth=0.5;
@@ -951,7 +1010,7 @@ function updateSemesterList(){
 
     const editBtn=document.createElement('button');
     editBtn.className='mbtn-s';
-    editBtn.textContent='更改';
+    editBtn.textContent='排課表';
     editBtn.style.cssText='padding:4px 8px;font-size:11px;';
     editBtn.onclick=(e)=>{e.stopPropagation();openSemesterEditor(k);};
     actions.appendChild(editBtn);
@@ -997,7 +1056,7 @@ function addSemesterByDate(){
   const trimmed=name.trim();
   if(!trimmed){alert('名稱不可空白');return;}
   if(semesters[trimmed]){alert('此名稱已存在，請改用其他名稱');return;}
-  semesters[trimmed]={courses:[],created:new Date().toISOString()};
+  semesters[trimmed]={courses:[],templates:[],created:new Date().toISOString()};
   sv('semesters',semesters);
   document.getElementById('semester-name').value='';
   openSemesterModal();
@@ -1015,7 +1074,7 @@ function createSemester(){
   const name=document.getElementById('semester-name').value.trim();
   if(!name){alert('請輸入學期名稱');return;}
   if(semesters[name]){alert('此學期已存在');return;}
-  semesters[name]={courses:[],created:new Date().toISOString()};
+  semesters[name]={courses:[],templates:[],created:new Date().toISOString()};
   sv('semesters',semesters);
   document.getElementById('semester-name').value='';
   openSemesterModal();
@@ -1060,8 +1119,13 @@ function openPeriodModal(){
 function buildPeriodForm(){
   const list=document.getElementById('periods-list');
   list.innerHTML='';
-  const params=ld('periodSettings',{startHour:8,startMin:0,durationMin:50,numPeriods:8});
+  const params=ld('periodSettings',{startHour:8,startMin:0,durationMin:50,breakMin:10,numPeriods:8});
   
+  const note=document.createElement('div');
+  note.style.cssText='font-size:12px;color:var(--text3);margin-bottom:10px;';
+  note.textContent='設定每節課的上課時間與節後休息時間，休息時間不會顯示於課表。';
+  list.appendChild(note);
+
   const numRow=document.createElement('div');
   numRow.style.cssText='margin-bottom:12px;';
   const numLabel=document.createElement('label');
@@ -1140,6 +1204,44 @@ function buildPeriodForm(){
   durationRow.appendChild(durationInput);
   list.appendChild(durationRow);
   
+  const breakRow=document.createElement('div');
+  breakRow.style.cssText='margin-bottom:12px;';
+  const breakLabel=document.createElement('label');
+  breakLabel.className='flabel';
+  breakLabel.textContent='休息時間（分鐘，不顯示於課表）';
+  breakRow.appendChild(breakLabel);
+  
+  const breakInput=document.createElement('input');
+  breakInput.type='number';
+  breakInput.min='0';
+  breakInput.max='60';
+  breakInput.value=params.breakMin;
+  breakInput.id='period-break';
+  breakInput.className='finput';
+  breakInput.placeholder='10';
+  breakInput.oninput=()=>updatePeriodPreview();
+  breakRow.appendChild(breakInput);
+  list.appendChild(breakRow);
+  
+  const morningRow=document.createElement('div');
+  morningRow.style.cssText='margin-bottom:12px;';
+  const morningLabel=document.createElement('label');
+  morningLabel.className='flabel';
+  morningLabel.textContent='上午節數';
+  morningRow.appendChild(morningLabel);
+  
+  const morningInput=document.createElement('input');
+  morningInput.type='number';
+  morningInput.min='1';
+  morningInput.max= params.numPeriods>1? params.numPeriods-1:1;
+  morningInput.value=params.morningCount;
+  morningInput.id='period-morning';
+  morningInput.className='finput';
+  morningInput.placeholder='4';
+  morningInput.oninput=()=>updatePeriodPreview();
+  morningRow.appendChild(morningInput);
+  list.appendChild(morningRow);
+  
   const previewDiv=document.createElement('div');
   previewDiv.style.cssText='padding:10px;background:var(--bg2);border-radius:8px;border:0.5px solid var(--border);margin-top:12px;';
   const previewTitle=document.createElement('div');
@@ -1160,7 +1262,9 @@ function updatePeriodPreview(){
   const startHour=parseInt(document.getElementById('period-start-hour').value)||8;
   const startMin=parseInt(document.getElementById('period-start-min').value)||0;
   const duration=parseInt(document.getElementById('period-duration').value)||50;
+  const breakMin=parseInt(document.getElementById('period-break').value)||0;
   const numPeriods=parseInt(document.getElementById('period-num').value)||8;
+  const morningCount=parseInt(document.getElementById('period-morning')?.value)||Math.max(1,Math.floor(numPeriods/2));
   
   const preview=[];
   let totalMin=startHour*60+startMin;
@@ -1169,7 +1273,10 @@ function updatePeriodPreview(){
     const m=totalMin%60;
     const timeStr=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
     preview.push('第'+(i+1)+'節 '+timeStr);
-    totalMin+=duration;
+    if(i===morningCount-1 && morningCount<numPeriods){
+      preview.push('午休');
+    }
+    totalMin+=duration+breakMin;
   }
   document.getElementById('period-preview').textContent=preview.join(' · ');
 }
@@ -1178,13 +1285,16 @@ function savePeriods(){
   const startHour=parseInt(document.getElementById('period-start-hour').value);
   const startMin=parseInt(document.getElementById('period-start-min').value);
   const duration=parseInt(document.getElementById('period-duration').value);
+  const breakMin=parseInt(document.getElementById('period-break').value);
   const numPeriods=parseInt(document.getElementById('period-num').value);
+  const morningCount=parseInt(document.getElementById('period-morning').value);
   
-  if(isNaN(startHour)||isNaN(startMin)||isNaN(duration)||isNaN(numPeriods)||startHour<0||startHour>23||startMin<0||startMin>59||duration<20||duration>120||numPeriods<1||numPeriods>12){
-    alert('請輸入有效的時間計量！');
+  if(isNaN(startHour)||isNaN(startMin)||isNaN(duration)||isNaN(breakMin)||isNaN(numPeriods)||isNaN(morningCount)||startHour<0||startHour>23||startMin<0||startMin>59||duration<20||duration>120||breakMin<0||breakMin>60||numPeriods<1||numPeriods>12||morningCount<1||morningCount>=numPeriods){
+    alert('請輸入有效的時間計量！上午節數需小於總節數。');
     return;
   }
   
+  PERIOD_SETTINGS={startHour,startMin,durationMin:duration,breakMin,numPeriods,morningCount};
   PERIODS=[];
   let totalMin=startHour*60+startMin;
   for(let i=0;i<numPeriods;i++){
@@ -1192,10 +1302,10 @@ function savePeriods(){
     const m=totalMin%60;
     const timeStr=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
     PERIODS.push({label:'第'+(i+1)+'節',time:timeStr});
-    totalMin+=duration;
+    totalMin+=duration+breakMin;
   }
   
-  sv('periodSettings',{startHour,startMin,durationMin:duration,numPeriods});
+  sv('periodSettings',PERIOD_SETTINGS);
   sv('periods',PERIODS);
   closeModal('modal-periods');
   renderGrid();
@@ -1236,7 +1346,7 @@ document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',f
 function confirmReset(){
   if(confirm('確定要重置所有資料嗎？')){
     ['semesters','hw','hols','periods'].forEach(k=>localStorage.removeItem(k));
-    semesters={'預設':{'courses':DEF,'created':new Date().toISOString()}};
+    semesters={'預設':{'courses':DEF,'templates':[],'created':new Date().toISOString()}};
     currentSemester='預設';
     classes=JSON.parse(JSON.stringify(DEF));homework=[];holidays={};PERIODS=JSON.parse(JSON.stringify(DEFAULT_PERIODS));
     sv('semesters',semesters);
@@ -1250,6 +1360,8 @@ function openSemesterEditor(name){
   if(!semesters[name])return;
   currentSemester=name;
   classes=semesters[currentSemester]?.courses||[];
+  semesters[currentSemester].templates=semesters[currentSemester].templates||[];
+  selectedTemplateIndex=null;
   document.getElementById('semester-edit-current').textContent='目前學期：'+currentSemester;
   renderSemesterEditPage();
   switchPage('semester-edit');
@@ -1259,47 +1371,172 @@ function closeSemesterEditor(){
   switchPage('schedule',document.getElementById('nav-schedule'));
 }
 
+function getCurrentTemplates(){
+  semesters[currentSemester].templates=semesters[currentSemester].templates||[];
+  const templates=semesters[currentSemester].templates;
+  if(selectedTemplateIndex!==null && selectedTemplateIndex>=templates.length) selectedTemplateIndex=null;
+  return templates;
+}
+
+function openTemplateModal(){
+  document.getElementById('template-name').value='';
+  document.getElementById('template-room').value='';
+  selColor='blue';
+  buildTemplateColorPicks();
+  document.getElementById('modal-template').classList.add('show');
+}
+
+function buildTemplateColorPicks(){
+  const cp=document.getElementById('template-color-picks');
+  cp.innerHTML='';
+  COLORS.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='cdot'+(c.key===selColor?' sel':'');
+    el.style.background=c.dot;
+    el.onclick=()=>{selColor=c.key;document.querySelectorAll('#template-color-picks .cdot').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');};
+    cp.appendChild(el);
+  });
+}
+
+function saveTemplate(){
+  const name=document.getElementById('template-name').value.trim();
+  const room=document.getElementById('template-room').value.trim();
+  if(!name){alert('請填寫課程名稱');return;}
+  const templates=getCurrentTemplates();
+  if(templates.some(t=>t.name===name&&t.room===room&&t.color===selColor)){
+    alert('此課程已存在');
+    return;
+  }
+  templates.push({id:Date.now()+Math.random(),name,room:room||'未指定',color:selColor});
+  semesters[currentSemester].templates=templates;
+  saveSemester();
+  closeModal('modal-template');
+  renderSemesterEditPage();
+}
+
+function assignTemplateToCell(dayIndex,periodIndex){
+  const templates=getCurrentTemplates();
+  const template=templates[selectedTemplateIndex];
+  if(!template){alert('請先選擇課程定義');return;}
+  const existing=classes.find(c=>c.days.includes(dayIndex)&&periodIndex>=c.start&&periodIndex<=c.end);
+  if(existing){
+    if(!confirm('此時段已有課程，是否覆蓋？')) return;
+    if(existing.days.length>1){existing.days=existing.days.filter(d=>d!==dayIndex);} else {classes.splice(classes.indexOf(existing),1);}
+  }
+  classes.push({name:template.name,room:template.room||'未指定',start:periodIndex,end:periodIndex,days:[dayIndex],color:template.color});
+  saveSemester();
+  renderSemesterEditPage();
+  renderGrid();
+  renderMonth();
+}
+
+function removeScheduleAssignment(dayIndex,periodIndex){
+  const existing=classes.find(c=>c.days.includes(dayIndex)&&periodIndex>=c.start&&periodIndex<=c.end);
+  if(!existing) return;
+  if(!confirm('確定要刪除此時段的課程？')) return;
+  if(existing.days.length>1){existing.days=existing.days.filter(d=>d!==dayIndex);} else {classes.splice(classes.indexOf(existing),1);}
+  saveSemester();
+  renderSemesterEditPage();
+  renderGrid();
+  renderMonth();
+}
+
 function renderSemesterEditPage(){
   const list=document.getElementById('semester-edit-list');
   list.innerHTML='';
-  if(!classes.length){
+  const templates=getCurrentTemplates();
+
+  const header=document.createElement('div');
+  header.style.cssText='display:flex;flex-direction:column;gap:12px;';
+  const topRow=document.createElement('div');
+  topRow.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:10px;';
+  topRow.innerHTML=`<div><div style="font-size:15px;font-weight:700;color:var(--text);">先定義課程，再填入空白課表</div><div style="font-size:12px;color:var(--text2);">選擇課程後，點擊下方格子排課；已排課程可點擊刪除。</div></div>`;
+  const addBtn=document.createElement('button');
+  addBtn.className='mbtn-s';
+  addBtn.textContent='新增課程定義';
+  addBtn.style.cssText='padding:8px 12px;font-size:13px;';
+  addBtn.onclick=openTemplateModal;
+  topRow.appendChild(addBtn);
+  header.appendChild(topRow);
+
+  const templateRow=document.createElement('div');
+  templateRow.style.cssText='display:flex;gap:8px;flex-wrap:wrap;';
+  if(!templates.length){
     const empty=document.createElement('div');
-    empty.style.cssText='padding:24px;text-align:center;color:var(--text3);';
-    empty.textContent='目前尚未有課程，請按上方「新增課程」新增。';
-    list.appendChild(empty);
-    return;
+    empty.style.cssText='padding:14px;border:0.5px dashed var(--border);border-radius:12px;color:var(--text3);flex:1;';
+    empty.textContent='尚未建立課程定義，請先新增課程。';
+    templateRow.appendChild(empty);
+  } else {
+    templates.forEach((t,idx)=>{
+      const btn=document.createElement('button');
+      btn.className='mbtn-c';
+      btn.textContent=t.name;
+      btn.style.cssText='padding:8px 10px;font-size:12px;'+(idx===selectedTemplateIndex? 'background:var(--accent);color:var(--accent-fg);border:none;':'');
+      btn.onclick=()=>{selectedTemplateIndex=idx;renderSemesterEditPage();};
+      templateRow.appendChild(btn);
+    });
   }
-  classes.forEach((c,idx)=>{
-    const card=document.createElement('div');
-    card.style.cssText='padding:12px;border:0.5px solid var(--border);border-radius:10px;background:var(--bg2);display:flex;flex-direction:column;gap:8px;';
-    const title=document.createElement('div');
-    title.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:12px;';
-    title.innerHTML=`<div><div style="font-size:14px;font-weight:700;color:var(--text);">${c.name}</div><div style="font-size:12px;color:var(--text2);">${c.room}</div></div><div style="font-size:12px;color:var(--text3);">${DAYS[c.days[0]]||''}</div>`;
-    card.appendChild(title);
-    const meta=document.createElement('div');
-    const start=PERIODS[c.start]?.time||'';
-    const end=PERIODS[c.end]?.time||'';
-    const days=c.days.map(d=>'週'+DAYS[d]).join('、');
-    meta.style.cssText='font-size:12px;color:var(--text2);';
-    meta.innerHTML=`時段：${start} - ${end} &nbsp;｜&nbsp; 星期：${days}`;
-    card.appendChild(meta);
-    const controls=document.createElement('div');
-    controls.style.cssText='display:flex;gap:8px;justify-content:flex-end;';
-    const editBtn=document.createElement('button');
-    editBtn.className='mbtn-s';
-    editBtn.textContent='編輯';
-    editBtn.style.cssText='padding:6px 10px;font-size:12px;';
-    editBtn.onclick=()=>openEditClassModal(c);
-    const delBtn=document.createElement('button');
-    delBtn.className='mbtn-c';
-    delBtn.textContent='刪除';
-    delBtn.style.cssText='padding:6px 10px;font-size:12px;';
-    delBtn.onclick=()=>{if(confirm('確定刪除這門課程？')){classes.splice(idx,1);saveSemester();renderSemesterEditPage();renderGrid();renderMonth();}};
-    controls.appendChild(editBtn);
-    controls.appendChild(delBtn);
-    card.appendChild(controls);
-    list.appendChild(card);
+  header.appendChild(templateRow);
+
+  const info=document.createElement('div');
+  info.style.cssText='padding:12px;border-radius:12px;background:var(--bg2);border:0.5px solid var(--border);color:var(--text2);font-size:13px;';
+  if(!templates.length){
+    info.textContent='請先新增課程定義，才能填入空白課表。';
+  } else {
+    info.textContent=selectedTemplateIndex===null? '尚未選擇課程，請點選上方課程後填入空格。':'已選擇課程：'+templates[selectedTemplateIndex].name+'，請點擊空白格子排課。';
+  }
+  header.appendChild(info);
+  list.appendChild(header);
+
+  const gridWrap=document.createElement('div');
+  gridWrap.className='grid-wrap';
+  const grid=document.createElement('div');
+  grid.className='grid';
+  grid.style.marginTop='10px';
+  const corner=document.createElement('div');
+  corner.className='day-header';
+  grid.appendChild(corner);
+  DAYS.forEach((d,i)=>{
+    const el=document.createElement('div');
+    el.className='day-header';
+    el.innerHTML=`<span class="dname">週${d}</span><span class="dnum">${i+1}</span>`;
+    grid.appendChild(el);
   });
+
+  PERIODS.forEach((p,pi)=>{
+    const tl=document.createElement('div');
+    tl.className='time-col';
+    tl.textContent=p.time;
+    grid.appendChild(tl);
+    DAYS.forEach((_,di)=>{
+      const cell=document.createElement('div');
+      cell.className='cell';
+      cell.style.cursor='pointer';
+      const assigned=classes.find(c=>c.days.includes(di)&&pi>=c.start&&pi<=c.end);
+      if(assigned){
+        cell.className+=' has-class';
+        if(pi===assigned.start){
+          const card=document.createElement('div');
+          card.className='cls cls-'+assigned.color+(assigned.end>assigned.start?' continuation-head':'');
+          card.style.height='100%';
+          card.innerHTML=`<span class="cname">${assigned.name}</span><span class="croom">${assigned.room}</span>${assigned.end>assigned.start?'<span class="multi">↓</span>':''}`;
+          cell.appendChild(card);
+        } else {
+          cell.style.padding='0';
+          const part=document.createElement('div');
+          part.className='cls cls-'+assigned.color+' continuation'+(pi===assigned.end?' continuation-bottom':' continuation-mid');
+          cell.appendChild(part);
+        }
+        cell.onclick=()=>removeScheduleAssignment(di,pi);
+      } else {
+        cell.onclick=()=>assignTemplateToCell(di,pi);
+      }
+      grid.appendChild(cell);
+    });
+  });
+
+  gridWrap.appendChild(grid);
+  list.appendChild(gridWrap);
 }
 
 function updateSemesterEditor(){
