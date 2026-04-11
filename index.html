@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="週課表"/>
 <title>週課表</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <link rel="manifest" id="manifest-link"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -51,7 +52,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
 
 .grid-wrap{flex:1;overflow-y:auto;overflow-x:hidden;}
-.grid{display:grid;grid-template-columns:38px repeat(5,minmax(0,1fr));width:100%;}
+.grid{display:grid;grid-template-columns:38px repeat(7,minmax(0,1fr));width:100%;}
 .day-header{padding:6px 2px;text-align:center;font-size:11px;border-bottom:0.5px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:2;}
 .day-header .dname{color:var(--text2);display:block;font-size:10px;margin-bottom:1px;}
 .day-header .dnum{color:var(--text);font-size:14px;font-weight:600;display:inline-block;width:26px;height:26px;line-height:26px;border-radius:50%;}
@@ -198,6 +199,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         <button class="toggle" id="notif-toggle" onclick="toggleNotif()"></button>
       </div>
       <div class="settings-section">資料</div>
+      <div class="settings-item" onclick="openScanModal()" style="cursor:pointer;">
+        <div><div class="s-label">掃描課表</div><div class="s-sub">上傳圖片自動匯入課程</div></div>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      </div>
       <div class="settings-item" onclick="openExportModal()" style="cursor:pointer;">
         <div><div class="s-label">匯出課表</div><div class="s-sub">儲存為圖片或分享連結</div></div>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
@@ -212,6 +217,8 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       </div>
     </div>
   </div>
+
+
 
   <div class="bottom-nav">
     <button class="nav-item active" onclick="switchPage('schedule',this)">
@@ -285,6 +292,20 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
   </div>
 </div>
 
+<div class="modal-bg" id="modal-scan">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="mtitle">掃描課表</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">上傳課表圖片，系統將自動識別並匯入課程。請確保圖片清晰，並包含課程名稱、時間和教室資訊。</p>
+    <input type="file" accept="image/*" id="scan-file" capture="environment" style="margin-bottom:12px;"/>
+    <button class="share-btn" onclick="processScan()">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="3"/><path d="M9 1v4M9 13v4M1 9h4M13 9h4"/></svg>
+      掃描並匯入
+    </button>
+    <div class="mactions"><button class="mbtn-c" onclick="closeModal('modal-scan')">取消</button></div>
+  </div>
+</div>
+
 <script>
 // PWA
 function makeIcon(sz){
@@ -305,7 +326,7 @@ if('serviceWorker' in navigator){
 }
 
 // Data
-const DAYS=['一','二','三','四','五'];
+const DAYS=['一','二','三','四','五','六','日'];
 const PERIODS=[
   {label:'第1節',time:'08:10'},{label:'第2節',time:'09:10'},{label:'第3節',time:'10:10'},
   {label:'第4節',time:'11:10'},{label:'第5節',time:'12:10'},{label:'第6節',time:'13:10'},
@@ -380,14 +401,13 @@ function switchPage(name,btn){
 
 // Grid
 function getWS(){const d=new Date(BASE);d.setDate(d.getDate()+weekOffset*7);return d;}
-function getWeekLabel(){const s=getWS(),e=new Date(s);e.setDate(e.getDate()+4);return(s.getMonth()+1)+'/'+s.getDate()+' – '+(e.getMonth()+1)+'/'+e.getDate();}
+function getWeekLabel(){const s=getWS(),e=new Date(s);e.setDate(e.getDate()+6);return(s.getMonth()+1)+'/'+s.getDate()+' – '+(e.getMonth()+1)+'/'+e.getDate();}
 function changeWeek(d){weekOffset+=d;document.getElementById('week-label').textContent=getWeekLabel();renderGrid();}
 function dk(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 
 function renderTodayWidget(){
-  const now=new Date(),dow=now.getDay(),di=dow>=1&&dow<=5?dow-1:-1;
-  const wc=document.getElementById('widget-classes');wc.innerHTML='';
-  if(di<0){wc.innerHTML='<span class="widget-empty">今天沒有課</span>';return;}
+  const now=new Date(),dow=now.getDay(),di=dow===0?6:dow-1;
+  const wc=document.getElementById('widget-classes');wc.innerHTML='';  
   const tc=classes.filter(c=>c.days.includes(di)).sort((a,b)=>a.start-b.start);
   if(!tc.length){wc.innerHTML='<span class="widget-empty">今天沒有課</span>';return;}
   tc.forEach(c=>{const el=document.createElement('div');el.className='widget-class cls-'+c.color;el.innerHTML=`<div class="wc-time">${PERIODS[c.start].time}</div><div class="wc-name">${c.name}</div>`;wc.appendChild(el);});
@@ -522,8 +542,9 @@ function saveHoliday(){
 
 // Export
 function openExportModal(){document.getElementById('modal-export').classList.add('show');}
+function openScanModal(){document.getElementById('modal-scan').classList.add('show');}
 function buildCanvas(){
-  const W=800,TW=60,DW=Math.floor((W-TW)/5),HR=40,RH=52;
+  const W=800,TW=60,DW=Math.floor((W-TW)/7),HR=40,RH=52;
   const H=HR+PERIODS.length*RH+20;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;
   const ctx=cv.getContext('2d');
@@ -566,6 +587,56 @@ function shareSchedule(){
     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({title:'我的週課表',files:[f]});
     else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='週課表.png';a.click();}
   });
+}
+
+// Scan
+async function processScan(){
+  const file = document.getElementById('scan-file').files[0];
+  if(!file){alert('請選擇圖片檔案');return;}
+  try{
+    const { data: { text } } = await Tesseract.recognize(file, 'chi_tra');
+    const parsedClasses = parseScheduleText(text);
+    if(parsedClasses.length){
+      classes.push(...parsedClasses);
+      sv('cls', classes);
+      renderGrid();
+      alert(`成功匯入 ${parsedClasses.length} 門課程`);
+      closeModal('modal-scan');
+    }else{
+      alert('未能識別任何課程，請檢查圖片清晰度或格式');
+    }
+  }catch(e){
+    alert('掃描失敗：'+e.message);
+  }
+}
+function parseScheduleText(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l);
+  const parsed = [];
+  const dayMap = {'一':0,'二':1,'三':2,'四':3,'五':4,'六':5,'日':6};
+  lines.forEach(line=>{
+    // 假設格式：週X 課程名稱 時間-時間 教室
+    // 例如：週一 微積分 08:10-09:10 理學院101
+    const match = line.match(/^週([一二三四五六日])\s+(.+?)\s+(\d{1,2}:\d{2})-(\d{1,2}:\d{2})\s+(.+)$/);
+    if(match){
+      const [, dayChar, name, startTime, endTime, room] = match;
+      const day = dayMap[dayChar];
+      if(day !== undefined){
+        const startPeriod = PERIODS.findIndex(p=>p.time === startTime);
+        const endPeriod = PERIODS.findIndex(p=>p.time === endTime);
+        if(startPeriod >=0 && endPeriod >=0 && endPeriod >= startPeriod){
+          parsed.push({
+            name: name.trim(),
+            room: room.trim(),
+            start: startPeriod,
+            end: endPeriod,
+            days: [day],
+            color: 'blue' // 預設顏色
+          });
+        }
+      }
+    }
+  });
+  return parsed;
 }
 
 // Shared
