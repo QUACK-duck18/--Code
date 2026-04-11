@@ -67,6 +67,9 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .dark .hol-badge{background:#4A1A1A;color:#FF8A8A;}
 .dark .mkp-badge{background:#1B3A1B;color:#81C784;}
 
+.lunch-break{display:contents;}
+.lunch-label{grid-column:1/-1;height:32px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text2);font-weight:500;border-top:0.5px dashed var(--border);border-bottom:0.5px dashed var(--border);background:var(--bg2);position:relative;z-index:1;}
+
 .cell.has-class{background:rgba(74,144,226,0.12);}
 .dark .cell.has-class{background:rgba(74,144,226,0.25);}
 
@@ -515,7 +518,8 @@ function normalizeSemesters(){
 let semesters=ld('semesters',{'預設':{'courses':DEF,'templates':[],'created':new Date().toISOString()}}),currentSemester='預設';
 normalizeSemesters();
 let classes=semesters[currentSemester]?.courses||DEF,homework=ld('hw',[]),holidays=ld('hols',{}),settings=ld('cfg',{dark:false,notif:false,notifMinutes:10});
-PERIOD_SETTINGS = ld('periodSettings',{startHour:8,startMin:0,durationMin:50,breakMin:10,numPeriods:8,morningCount:4});
+PERIOD_SETTINGS = ld('periodSettings',{startHour:8,startMin:0,durationMin:50,breakMin:10,numPeriods:8,morningCount:4,enableLunch:true});
+if(!('enableLunch' in PERIOD_SETTINGS))PERIOD_SETTINGS.enableLunch=true;
 PERIODS = ld('periods', DEFAULT_PERIODS);
 if(PERIODS.length!==PERIOD_SETTINGS.numPeriods){
   PERIODS=[];
@@ -600,6 +604,8 @@ function renderTodayWidget(){
 function renderGrid(){
   const grid=document.getElementById('grid');grid.innerHTML='';
   const ws=getWS(),now=new Date();
+  const enableLunch=PERIOD_SETTINGS.enableLunch!==false;
+  const morningCount=PERIOD_SETTINGS.morningCount||4;
   const corner=document.createElement('div');corner.className='day-header';grid.appendChild(corner);
   DAYS.forEach((d,i)=>{
     const dt=new Date(ws);dt.setDate(dt.getDate()+i);
@@ -611,6 +617,16 @@ function renderGrid(){
     grid.appendChild(el);
   });
   PERIODS.forEach((p,pi)=>{
+    // Add lunch break before afternoon classes
+    if(enableLunch && pi===morningCount && morningCount<PERIODS.length){
+      const lunchDiv=document.createElement('div');
+      lunchDiv.className='lunch-break';
+      const lunchLabel=document.createElement('div');
+      lunchLabel.className='lunch-label';
+      lunchLabel.textContent='午休';
+      lunchDiv.appendChild(lunchLabel);
+      grid.appendChild(lunchDiv);
+    }
     const tl=document.createElement('div');tl.className='time-col';tl.textContent=p.time;grid.appendChild(tl);
     DAYS.forEach((_,di)=>{
       const dt=new Date(ws);dt.setDate(dt.getDate()+di);
@@ -1223,24 +1239,131 @@ function buildPeriodForm(){
   breakRow.appendChild(breakInput);
   list.appendChild(breakRow);
   
-  const morningRow=document.createElement('div');
-  morningRow.style.cssText='margin-bottom:12px;';
-  const morningLabel=document.createElement('label');
-  morningLabel.className='flabel';
-  morningLabel.textContent='上午節數';
-  morningRow.appendChild(morningLabel);
+  const lunchSection=document.createElement('div');
+  lunchSection.style.cssText='margin-top:16px;padding-top:12px;border-top:0.5px solid var(--border);';
+  const lunchTitle=document.createElement('div');
+  lunchTitle.style.cssText='font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;';
+  lunchTitle.textContent='午休設定';
+  lunchSection.appendChild(lunchTitle);
   
+  const lunchToggleRow=document.createElement('div');
+  lunchToggleRow.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg2);border-radius:8px;margin-bottom:12px;';
+  const lunchLabel=document.createElement('label');
+  lunchLabel.className='flabel';
+  lunchLabel.style.cssText='margin:0;font-size:14px;color:var(--text);';
+  lunchLabel.textContent='啟用午休分隔符';
+  const lunchToggle=document.createElement('button');
+  lunchToggle.className='toggle'+(params.enableLunch!==false?' on':'');
+  lunchToggle.id='lunch-toggle';
+  lunchToggle.style.cssText='margin:0;';
+  lunchToggle.onclick=(e)=>{e.preventDefault();lunchToggle.classList.toggle('on');document.getElementById('lunch-time-row').style.display=lunchToggle.classList.contains('on')?'':'none';updatePeriodPreview();};
+  lunchToggleRow.appendChild(lunchLabel);
+  lunchToggleRow.appendChild(lunchToggle);
+  lunchSection.appendChild(lunchToggleRow);
+  
+  const lunchTimeRow=document.createElement('div');
+  lunchTimeRow.id='lunch-time-row';
+  lunchTimeRow.style.cssText='margin-bottom:12px;'+(params.enableLunch===false?'display:none;':'');
+  const lunchTimeLabel=document.createElement('label');
+  lunchTimeLabel.className='flabel';
+  lunchTimeLabel.textContent='午休時間（在第幾節後）';
+  lunchTimeRow.appendChild(lunchTimeLabel);
+  
+  const lunchTimeInputs=document.createElement('div');
+  lunchTimeInputs.style.cssText='display:flex;gap:8px;';
+  const lunchTimeInput=document.createElement('select');
+  lunchTimeInput.id='lunch-time';
+  lunchTimeInput.className='finput';
+  for(let i=1;i<params.numPeriods;i++){
+    const opt=document.createElement('option');
+    opt.value=i;
+    opt.textContent='第'+i+'節後';
+    if(i===params.morningCount)opt.selected=true;
+    lunchTimeInput.appendChild(opt);
+  }
+  lunchTimeInput.oninput=()=>updatePeriodPreview();
+  lunchTimeInputs.appendChild(lunchTimeInput);
+  lunchTimeRow.appendChild(lunchTimeInputs);
+  lunchSection.appendChild(lunchTimeRow);
+  list.appendChild(lunchSection);
+  
+  const morningRow=document.createElement('div');
+  morningRow.style.cssText='display:none;';
   const morningInput=document.createElement('input');
-  morningInput.type='number';
-  morningInput.min='1';
-  morningInput.max= params.numPeriods>1? params.numPeriods-1:1;
-  morningInput.value=params.morningCount;
+  morningInput.type='hidden';
   morningInput.id='period-morning';
-  morningInput.className='finput';
-  morningInput.placeholder='4';
-  morningInput.oninput=()=>updatePeriodPreview();
+  morningInput.value=params.morningCount;
   morningRow.appendChild(morningInput);
   list.appendChild(morningRow);
+  
+  const peTimeSection=document.createElement('div');
+  peTimeSection.style.cssText='margin-top:16px;padding-top:12px;border-top:0.5px solid var(--border);';
+  const peTimeTitle=document.createElement('div');
+  peTimeTitle.style.cssText='font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;';
+  peTimeTitle.textContent='各節課程時間';
+  peTimeSection.appendChild(peTimeTitle);
+  
+  const periodTimesDiv=document.createElement('div');
+  periodTimesDiv.id='period-times-editor';
+  periodTimesDiv.style.cssText='display:flex;flex-direction:column;gap:8px;max-height:250px;overflow-y:auto;';
+  for(let i=0;i<params.numPeriods;i++){
+    const pRow=document.createElement('div');
+    pRow.style.cssText='display:flex;gap:6px;align-items:center;padding:8px;background:var(--bg2);border-radius:6px;font-size:12px;';
+    const pLabel=document.createElement('div');
+    pLabel.style.cssText='min-width:35px;font-weight:500;color:var(--text2);';
+    pLabel.textContent='第'+(i+1)+'節';
+    pRow.appendChild(pLabel);
+    
+    const pStartInputs=document.createElement('div');
+    pStartInputs.style.cssText='display:flex;gap:2px;align-items:center;';
+    const pStartH=document.createElement('input');
+    pStartH.type='number';pStartH.min='0';pStartH.max='23';pStartH.className='finput';
+    pStartH.style.cssText='width:35px;padding:4px;font-size:11px;';
+    pStartH.value=PERIODS[i]?parseInt(PERIODS[i].time.split(':')[0]):8;
+    pStartH.dataset.periodIndex=i;
+    pStartH.dataset.component='hour';
+    pStartH.onchange=()=>updatePeriodTime();
+    const pStartM=document.createElement('input');
+    pStartM.type='number';pStartM.min='0';pStartM.max='59';pStartM.className='finput';
+    pStartM.style.cssText='width:35px;padding:4px;font-size:11px;';
+    pStartM.value=PERIODS[i]?parseInt(PERIODS[i].time.split(':')[1]):0;
+    pStartM.dataset.periodIndex=i;
+    pStartM.dataset.component='min';
+    pStartM.onchange=()=>updatePeriodTime();
+    pStartInputs.appendChild(pStartH);
+    const pTimeUnit1=document.createElement('span');
+    pTimeUnit1.textContent=':';pTimeUnit1.style.cssText='color:var(--text3);';
+    pStartInputs.appendChild(pTimeUnit1);
+    pStartInputs.appendChild(pStartM);
+    pRow.appendChild(pStartInputs);
+    
+    const pEndInputs=document.createElement('div');
+    pEndInputs.style.cssText='display:flex;gap:2px;align-items:center;margin-left:auto;';
+    const pEndH=document.createElement('input');
+    pEndH.type='number';pEndH.min='0';pEndH.max='23';pEndH.className='finput';
+    pEndH.style.cssText='width:35px;padding:4px;font-size:11px;';
+    const ehVal=PERIODS[i]?(parseInt(PERIODS[i].time.split(':')[0])*60+parseInt(PERIODS[i].time.split(':')[1])+params.durationMin):(8*60+50);
+    pEndH.value=Math.floor(ehVal/60);
+    pEndH.dataset.periodIndex=i;
+    pEndH.dataset.component='end-hour';
+    pEndH.onchange=()=>updatePeriodTime();
+    const pEndM=document.createElement('input');
+    pEndM.type='number';pEndM.min='0';pEndM.max='59';pEndM.className='finput';
+    pEndM.style.cssText='width:35px;padding:4px;font-size:11px;';
+    pEndM.value=ehVal%60;
+    pEndM.dataset.periodIndex=i;
+    pEndM.dataset.component='end-min';
+    pEndM.onchange=()=>updatePeriodTime();
+    pEndInputs.appendChild(pEndH);
+    const pTimeUnit2=document.createElement('span');
+    pTimeUnit2.textContent=':';pTimeUnit2.style.cssText='color:var(--text3);';
+    pEndInputs.appendChild(pTimeUnit2);
+    pEndInputs.appendChild(pEndM);
+    pRow.appendChild(pEndInputs);
+    periodTimesDiv.appendChild(pRow);
+  }
+  peTimeSection.appendChild(periodTimesDiv);
+  list.appendChild(peTimeSection);
   
   const previewDiv=document.createElement('div');
   previewDiv.style.cssText='padding:10px;background:var(--bg2);border-radius:8px;border:0.5px solid var(--border);margin-top:12px;';
@@ -1258,13 +1381,27 @@ function buildPeriodForm(){
   updatePeriodPreview();
 }
 
+function updatePeriodTime(){
+  const inputs=document.querySelectorAll('#period-times-editor input');
+  const newPeriods=[];
+  for(let i=0;i<(PERIOD_SETTINGS?.numPeriods||8);i++){
+    const startH=parseInt(document.querySelector('input[data-period-index="'+i+'"][data-component="hour"]')?.value||0);
+    const startM=parseInt(document.querySelector('input[data-period-index="'+i+'"][data-component="min"]')?.value||0);
+    const timeStr=String(startH).padStart(2,'0')+':'+String(startM).padStart(2,'0');
+    newPeriods.push({label:'第'+(i+1)+'節',time:timeStr});
+  }
+  PERIODS=newPeriods;
+  updatePeriodPreview();
+}
+
 function updatePeriodPreview(){
   const startHour=parseInt(document.getElementById('period-start-hour').value)||8;
   const startMin=parseInt(document.getElementById('period-start-min').value)||0;
   const duration=parseInt(document.getElementById('period-duration').value)||50;
   const breakMin=parseInt(document.getElementById('period-break').value)||0;
   const numPeriods=parseInt(document.getElementById('period-num').value)||8;
-  const morningCount=parseInt(document.getElementById('period-morning')?.value)||Math.max(1,Math.floor(numPeriods/2));
+  const enableLunch=document.getElementById('lunch-toggle')?.classList.contains('on');
+  const lunchTime=parseInt(document.getElementById('lunch-time')?.value||4);
   
   const preview=[];
   let totalMin=startHour*60+startMin;
@@ -1273,7 +1410,7 @@ function updatePeriodPreview(){
     const m=totalMin%60;
     const timeStr=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
     preview.push('第'+(i+1)+'節 '+timeStr);
-    if(i===morningCount-1 && morningCount<numPeriods){
+    if(enableLunch && i===lunchTime-1 && lunchTime<numPeriods){
       preview.push('午休');
     }
     totalMin+=duration+breakMin;
@@ -1287,23 +1424,25 @@ function savePeriods(){
   const duration=parseInt(document.getElementById('period-duration').value);
   const breakMin=parseInt(document.getElementById('period-break').value);
   const numPeriods=parseInt(document.getElementById('period-num').value);
-  const morningCount=parseInt(document.getElementById('period-morning').value);
+  const enableLunch=document.getElementById('lunch-toggle')?.classList.contains('on');
+  const lunchTime=parseInt(document.getElementById('lunch-time')?.value||4);
   
-  if(isNaN(startHour)||isNaN(startMin)||isNaN(duration)||isNaN(breakMin)||isNaN(numPeriods)||isNaN(morningCount)||startHour<0||startHour>23||startMin<0||startMin>59||duration<20||duration>120||breakMin<0||breakMin>60||numPeriods<1||numPeriods>12||morningCount<1||morningCount>=numPeriods){
-    alert('請輸入有效的時間計量！上午節數需小於總節數。');
+  if(isNaN(startHour)||isNaN(startMin)||isNaN(duration)||isNaN(breakMin)||isNaN(numPeriods)||startHour<0||startHour>23||startMin<0||startMin>59||duration<20||duration>120||breakMin<0||breakMin>60||numPeriods<1||numPeriods>12){
+    alert('請輸入有效的時間計量！');
     return;
   }
   
-  PERIOD_SETTINGS={startHour,startMin,durationMin:duration,breakMin,numPeriods,morningCount};
-  PERIODS=[];
-  let totalMin=startHour*60+startMin;
+  // Collect individual period times
+  const newPeriods=[];
   for(let i=0;i<numPeriods;i++){
-    const h=Math.floor(totalMin/60);
-    const m=totalMin%60;
-    const timeStr=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
-    PERIODS.push({label:'第'+(i+1)+'節',time:timeStr});
-    totalMin+=duration+breakMin;
+    const startH=parseInt(document.querySelector('input[data-period-index="'+i+'"][data-component="hour"]')?.value||0);
+    const startM=parseInt(document.querySelector('input[data-period-index="'+i+'"][data-component="min"]')?.value||0);
+    const timeStr=String(startH).padStart(2,'0')+':'+String(startM).padStart(2,'0');
+    newPeriods.push({label:'第'+(i+1)+'節',time:timeStr});
   }
+  
+  PERIOD_SETTINGS={startHour,startMin,durationMin:duration,breakMin,numPeriods,morningCount:lunchTime,enableLunch};
+  PERIODS=newPeriods;
   
   sv('periodSettings',PERIOD_SETTINGS);
   sv('periods',PERIODS);
