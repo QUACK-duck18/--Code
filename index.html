@@ -122,15 +122,6 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .month-day.today{background:var(--accent);color:var(--accent-fg);font-weight:600;}
 .month-day .day-num{font-weight:600;}
 .month-day .day-badge{font-size:8px;position:absolute;bottom:1px;}
-.month-day .day-dots{display:flex;gap:2px;position:absolute;bottom:2px;left:50%;transform:translateX(-50%);flex-wrap:wrap;justify-content:center;max-width:80%;}
-.month-day .hw-dot{width:5px;height:5px;border-radius:50%;background:#E24B4A;flex-shrink:0;}
-.month-day .hw-dot.done-dot{background:#9E9E9E;}
-.month-day .hw-count{font-size:7px;font-weight:700;background:#E24B4A;color:#fff;border-radius:3px;padding:0 3px;position:absolute;top:2px;right:2px;line-height:1.6;}
-.hw-day-popup{background:var(--bg);border:0.5px solid var(--border2);border-radius:12px;padding:10px 12px;margin:0 16px 8px;box-shadow:none;}
-.hw-day-popup-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;}
-.hw-day-item{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:0.5px solid var(--border);font-size:12px;}
-.hw-day-item:last-child{border-bottom:none;}
-.hw-day-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
 .holidays-list{padding:0 16px 16px;}
 .holiday-preset{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
 .hol-tag{background:var(--bg2);border:0.5px solid var(--border2);padding:6px 10px;border-radius:20px;font-size:12px;cursor:pointer;color:var(--text);}
@@ -188,6 +179,23 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 #notif-banner{display:none;background:#EAF3DE;padding:8px 14px;font-size:12px;color:#27500A;border-bottom:0.5px solid #C0DD97;align-items:center;gap:8px;flex-shrink:0;}
 .dark #notif-banner{background:#1A2E0A;color:#97C459;border-color:#3B6D11;}
 #notif-banner.show{display:flex;}
+/* FAB */
+.fab{position:absolute;bottom:20px;right:16px;width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--accent-fg);border:none;font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.18);}
+/* Month HW range */
+.month-day.hw-range{background:rgba(226,75,74,0.08);}
+.dark .month-day.hw-range{background:rgba(226,75,74,0.15);}
+.month-day.hw-start{border:1.5px solid rgba(226,75,74,0.5);}
+.month-day.hw-end{border:1.5px solid rgba(226,75,74,0.8);}
+/* Semester course list */
+.sem-course-list{display:flex;flex-direction:column;gap:4px;margin-top:6px;padding-top:6px;border-top:0.5px solid var(--border);}
+.sem-course-item{display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 6px;border-radius:6px;background:var(--bg);}
+.sem-course-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sem-course-name{flex:1;color:var(--text);}
+.sem-course-meta{font-size:11px;color:var(--text3);}
+.sem-course-edit{border:none;background:transparent;color:var(--text2);font-size:12px;cursor:pointer;padding:2px 6px;border-radius:4px;}
+.sem-course-del{border:none;background:transparent;color:#E24B4A;font-size:14px;cursor:pointer;padding:2px 4px;}
+/* HW date range meta */
+.hw-range-badge{font-size:10px;padding:1px 5px;border-radius:4px;background:rgba(226,75,74,0.1);color:#E24B4A;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -202,15 +210,6 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
   <div class="header" id="sched-header">
     <div class="header-row">
       <div><div class="header-title">週課表</div></div>
-      <div class="header-actions">
-        <button class="icon-btn" onclick="openHolidayModal()" title="假期/補課">
-          <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="14" height="13" rx="2"/><path d="M6 1v4M12 1v4M2 8h14M6 12h6"/></svg>
-        </button>
-        <button class="icon-btn" onclick="openExportModal()" title="匯出">
-          <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2v9M6 8l3 3 3-3"/><path d="M3 13v2a1 1 0 001 1h10a1 1 0 001-1v-2"/></svg>
-        </button>
-        <button class="icon-btn btn-add" onclick="openClassModal()">+</button>
-      </div>
     </div>
     <div class="week-nav-row">
       <button class="week-arrow" onclick="changeWeek(-1)">&#8249;</button>
@@ -227,6 +226,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
   <div class="page active" id="page-schedule">
     <div class="legend" id="legend"></div>
     <div class="grid-wrap"><div class="grid" id="grid"></div></div>
+    <button class="fab" onclick="openClassModal()" title="新增課程">+</button>
   </div>
 
   <div class="page" id="page-hw">
@@ -286,10 +286,6 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       <div class="settings-item" onclick="openPeriodModal()" style="cursor:pointer;">
         <div><div class="s-label">自訂時間表</div><div class="s-sub">編輯每節課的時間</div></div>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      </div>
-      <div class="settings-item">
-        <div><div class="s-label">個別課程時間</div><div class="s-sub">開啟後可單獨調整每課上/下課時間</div></div>
-        <button class="toggle" id="custom-time-toggle" onclick="toggleCustomTimeMode()"></button>
       </div>
       <div class="settings-section">資料</div>
       <div class="settings-item" onclick="openSemesterModal()" style="cursor:pointer;">
@@ -378,7 +374,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
         <span style="color:var(--text3);font-size:13px;">—</span>
         <input type="time" class="finput" id="edit-custom-end" style="flex:1;"/>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px;">此時間僅用於顯示，格子位置仍依節次排列</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px;">時間顯示於卡片；格子位置仍依節次排列</div>
     </div>
     <div class="frow"><label class="flabel">星期（可多選）</label><div class="day-checks" id="edit-day-checks"></div></div>
     <div class="frow"><label class="flabel">顏色</label><div class="colors" id="edit-color-picks"></div></div>
@@ -393,12 +389,21 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 <div class="modal-bg" id="modal-hw">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="mtitle">新增作業</div>
+    <div class="mtitle" id="hw-modal-title">新增作業</div>
+    <input type="hidden" id="hw-edit-id"/>
     <div class="frow"><label class="flabel">作業名稱</label><input class="finput" id="hw-name" placeholder="例：第三章習題"/></div>
     <div class="frow"><label class="flabel">科目</label><select class="finput" id="hw-subj"></select></div>
-    <div class="frow"><label class="flabel">截止日期</label><input class="finput" type="date" id="hw-due"/></div>
+    <div class="frow">
+      <label class="flabel">日期範圍</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="finput" type="date" id="hw-start" style="flex:1;" placeholder="開始（選填）"/>
+        <span style="color:var(--text3);font-size:13px;">→</span>
+        <input class="finput" type="date" id="hw-due" style="flex:1;" placeholder="截止日期"/>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px;">設定日期範圍後，月曆會標示整段期間</div>
+    </div>
     <div class="frow"><label class="flabel">備註（選填）</label><textarea class="finput" id="hw-note" rows="2" placeholder="例如：需要提交紙本"></textarea></div>
-    <div class="mactions"><button class="mbtn-c" onclick="closeModal('modal-hw')">取消</button><button class="mbtn-s" onclick="saveHw()">新增</button></div>
+    <div class="mactions"><button class="mbtn-c" onclick="closeModal('modal-hw')">取消</button><button class="mbtn-s" id="hw-save-btn" onclick="saveHw()">新增</button></div>
   </div>
 </div>
 
@@ -419,6 +424,10 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="mtitle">自訂時間表</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 14px;border-bottom:0.5px solid var(--border);margin-bottom:12px;">
+      <div><div class="s-label" style="font-size:14px;">個別課程自訂時間</div><div class="s-sub">開啟後可在課程編輯中單獨設定上/下課時間</div></div>
+      <button class="toggle" id="custom-time-toggle" onclick="toggleCustomTimeMode()"></button>
+    </div>
     <div id="periods-list" style="margin-bottom:12px;"></div>
     <div class="mactions"><button class="mbtn-c" onclick="closeModal('modal-periods')">取消</button><button class="mbtn-s" onclick="savePeriods()">保存</button></div>
   </div>
@@ -476,7 +485,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
       <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">當前學期：<strong id="current-semester">未選擇</strong></div>
       <button class="mbtn-s" onclick="addSemesterByDate()" style="width:100%;margin-bottom:8px;">新增日期</button>
       <button class="mbtn-s" onclick="openPeriodModal()" style="width:100%;margin-bottom:8px;">更改時間表</button>
-      <div id="semester-list" style="max-height:200px;overflow-y:auto;"></div>
+      <div id="semester-list" style="max-height:360px;overflow-y:auto;"></div>
     </div>
     <div class="mactions">
       <button class="mbtn-c" onclick="closeModal('modal-semester')">關閉</button>
@@ -537,9 +546,8 @@ function normalizeSemesters(){
   });
 }
 
-let semesters=ld('semesters',{'預設':{'courses':DEF,'templates':[],'created':new Date().toISOString()}});
+let semesters=ld('semesters',{'預設':{'courses':DEF,'templates':[],'created':new Date().toISOString()}}),currentSemester=ld('currentSemester','預設');
 normalizeSemesters();
-let currentSemester=ld('currentSemester','預設');
 if(!semesters[currentSemester])currentSemester='預設';
 let classes=semesters[currentSemester]?.courses||DEF,homework=ld('hw',[]),holidays=ld('hols',{}),settings=ld('cfg',{dark:false,notif:false,notifMinutes:10,customTimeMode:false});
 PERIOD_SETTINGS = ld('periodSettings',{startHour:8,startMin:0,durationMin:50,breakMin:10,numPeriods:8,morningCount:4,enableLunch:true});
@@ -570,8 +578,11 @@ function toggleCustomTimeMode(){
   sv('cfg',settings);
   document.getElementById('custom-time-toggle').classList.toggle('on',settings.customTimeMode);
 }
+function syncCustomTimeToggle(){
+  const t=document.getElementById('custom-time-toggle');
+  if(t)t.classList.toggle('on',!!settings.customTimeMode);
+}
 applyDark();
-if(settings.customTimeMode)document.getElementById('custom-time-toggle').classList.add('on');
 
 // Notifications
 function toggleNotif(){
@@ -658,8 +669,7 @@ function renderGrid(){
       lunchDiv.className='lunch-break';
       const lunchLabel=document.createElement('div');
       lunchLabel.className='lunch-label';
-      const lunchDur=PERIOD_SETTINGS.lunchDurationMin;
-      lunchLabel.textContent=lunchDur?`午休 ${lunchDur} 分鐘`:'午休';
+      lunchLabel.textContent='午休';
       lunchDiv.appendChild(lunchLabel);
       grid.appendChild(lunchDiv);
     }
@@ -685,7 +695,7 @@ function renderGrid(){
           const startLongPress=()=>{longPressTimer=setTimeout(()=>{openEditClassModal(c);},500);};
           const endLongPress=()=>{if(longPressTimer)clearTimeout(longPressTimer);};
           card.addEventListener('mousedown',startLongPress);card.addEventListener('mouseup',endLongPress);card.addEventListener('mouseleave',endLongPress);
-          card.addEventListener('touchstart',startLongPress);card.addEventListener('touchend',endLongPress);
+          card.addEventListener('touchstart',startLongPress,{passive:true});card.addEventListener('touchend',endLongPress);
           cell.appendChild(card);
         } else {
           cell.style.padding='0';
@@ -749,8 +759,7 @@ function openEditClassModal(classObj){
   document.getElementById('edit-room').value=classObj.room;
   document.getElementById('edit-start').value=classObj.start;
   document.getElementById('edit-end').value=classObj.end;
-  // Custom time fields
-  const customOn=settings.customTimeMode;
+  const customOn=!!settings.customTimeMode;
   document.getElementById('edit-period-row').style.display=customOn?'none':'';
   document.getElementById('edit-custom-time-row').style.display=customOn?'':'none';
   if(customOn){
@@ -779,8 +788,7 @@ function saveEditClass(){
       updated.customStartTime=document.getElementById('edit-custom-start').value||null;
       updated.customEndTime=document.getElementById('edit-custom-end').value||null;
     } else {
-      updated.customStartTime=null;
-      updated.customEndTime=null;
+      updated.customStartTime=null;updated.customEndTime=null;
     }
     classes[editingClassIndex]=updated;
     saveSemester();closeModal('modal-edit-class');renderGrid();updateSemesterEditor();
@@ -797,28 +805,51 @@ function deleteEditClass(){
 }
 
 // Homework
-function openHwModal(){
+function openHwModal(editId){
   const sel=document.getElementById('hw-subj');sel.innerHTML='';
   const subjs=[...new Set(classes.map(c=>c.name))];
   subjs.forEach(s=>sel.innerHTML+=`<option>${s}</option>`);
   if(!subjs.length)sel.innerHTML='<option>其他</option>';
-  const t=new Date();t.setDate(t.getDate()+7);
-  document.getElementById('hw-due').value=t.toISOString().split('T')[0];
-  document.getElementById('hw-name').value='';
-  document.getElementById('hw-note').value='';
+  const isEdit=!!editId;
+  document.getElementById('hw-modal-title').textContent=isEdit?'編輯作業':'新增作業';
+  document.getElementById('hw-save-btn').textContent=isEdit?'保存':'新增';
+  document.getElementById('hw-edit-id').value=editId||'';
+  if(isEdit){
+    const h=homework.find(x=>x.id==editId);
+    if(h){
+      document.getElementById('hw-name').value=h.name;
+      document.getElementById('hw-subj').value=h.subj;
+      document.getElementById('hw-start').value=h.startDate||'';
+      document.getElementById('hw-due').value=h.due||'';
+      document.getElementById('hw-note').value=h.note||'';
+    }
+  } else {
+    const t=new Date();t.setDate(t.getDate()+7);
+    document.getElementById('hw-start').value='';
+    document.getElementById('hw-due').value=t.toISOString().split('T')[0];
+    document.getElementById('hw-name').value='';
+    document.getElementById('hw-note').value='';
+  }
   document.getElementById('modal-hw').classList.add('show');
 }
 function saveHw(){
   const name=document.getElementById('hw-name').value.trim();
   const subj=document.getElementById('hw-subj').value;
   const due=document.getElementById('hw-due').value;
+  const startDate=document.getElementById('hw-start').value||null;
   const note=document.getElementById('hw-note').value.trim();
   if(!name){alert('請填寫作業名稱');return;}
-  homework.push({id:Date.now(),name,subj,due,note,done:false});
-  sv('hw',homework);closeModal('modal-hw');renderHw();
+  const editId=document.getElementById('hw-edit-id').value;
+  if(editId){
+    const h=homework.find(x=>x.id==editId);
+    if(h){Object.assign(h,{name,subj,due,startDate,note});}
+  } else {
+    homework.push({id:Date.now(),name,subj,due,startDate,note,done:false});
+  }
+  sv('hw',homework);closeModal('modal-hw');renderHw();renderMonth();
 }
-function toggleHw(id){const h=homework.find(x=>x.id===id);if(h)h.done=!h.done;sv('hw',homework);renderHw();}
-function delHw(id){homework=homework.filter(x=>x.id!==id);sv('hw',homework);renderHw();}
+function toggleHw(id){const h=homework.find(x=>x.id===id);if(h)h.done=!h.done;sv('hw',homework);renderHw();renderMonth();}
+function delHw(id){homework=homework.filter(x=>x.id!==id);sv('hw',homework);renderHw();renderMonth();}
 function renderHw(){
   const list=document.getElementById('hw-list');list.innerHTML='';
   const sorted=[...homework].sort((a,b)=>a.done!==b.done?a.done?1:-1:(a.due||'').localeCompare(b.due||''));
@@ -827,6 +858,7 @@ function renderHw(){
     const cls=classes.find(c=>c.name===h.subj);
     const col=cls?cls.color:'blue';
     const overdue=h.due&&!h.done&&new Date(h.due)<new Date();
+    const hasRange=h.startDate&&h.due&&h.startDate!==h.due;
     const el=document.createElement('div');el.className='hw-item';
     el.innerHTML=`
       <div class="hw-check${h.done?' done':''}" onclick="toggleHw(${h.id})">
@@ -836,11 +868,17 @@ function renderHw(){
         <div class="hw-name${h.done?' done':''}">${h.name}</div>
         <div class="hw-meta">
           <span class="hw-subj cls-${col}">${h.subj}</span>
-          ${h.due?`<span class="${overdue?'overdue':''}">${overdue?'已逾期 ':'截止 '}${h.due}</span>`:''}
+          ${hasRange?`<span class="hw-range-badge">${h.startDate} → ${h.due}</span>`:h.due?`<span class="${overdue?'overdue':''}">${overdue?'已逾期 ':'截止 '}${h.due}</span>`:''}
         </div>
         ${h.note?`<div class="hw-meta" style="margin-top:4px;font-size:12px;color:var(--text3);">備註: ${h.note}</div>`:''}
       </div>
       <button class="hw-del" onclick="delHw(${h.id})">×</button>`;
+    // Long press to edit
+    let lpt=null;
+    const slp=()=>{lpt=setTimeout(()=>openHwModal(h.id),500);};
+    const elp=()=>{if(lpt)clearTimeout(lpt);};
+    el.addEventListener('mousedown',slp);el.addEventListener('mouseup',elp);el.addEventListener('mouseleave',elp);
+    el.addEventListener('touchstart',slp,{passive:true});el.addEventListener('touchend',elp);
     list.appendChild(el);
   });
 }
@@ -930,31 +968,32 @@ function renderMonth(){
   const ms=getMonthStart();
   const year=ms.getFullYear(),month=ms.getMonth();
   const firstDay=new Date(year,month,1).getDay();
-  const adjustedFirstDay = (firstDay + 6) % 7; // 調整為星期一開始
+  const adjustedFirstDay=(firstDay+6)%7;
   const daysInMonth=new Date(year,month+1,0).getDate();
   const daysInPrevMonth=new Date(year,month,0).getDate();
-  
-  const grid=document.getElementById('month-grid');
-  grid.innerHTML='';
 
-  // 星期標題
-  const weekDays=['一','二','三','四','五','六','日'];
-  weekDays.forEach(day=>{
-    const el=document.createElement('div');
-    el.className='month-weekday';
-    el.textContent=day;
-    grid.appendChild(el);
+  // Build HW range set for this month
+  const hwRanges={};// dateStr -> {dots:[],isStart,isEnd}
+  homework.forEach(h=>{
+    if(!h.due)return;
+    const start=h.startDate?new Date(h.startDate):new Date(h.due);
+    const end=new Date(h.due);
+    for(let dd=new Date(start);dd<=end;dd.setDate(dd.getDate()+1)){
+      const ds=dk2(dd);
+      if(!hwRanges[ds])hwRanges[ds]={hws:[]};
+      hwRanges[ds].hws.push(h);
+      if(ds===dk2(start))hwRanges[ds].isStart=true;
+      if(ds===dk2(end))hwRanges[ds].isEnd=true;
+    }
   });
 
-  // 前月份的日期
-  for(let i=adjustedFirstDay-1;i>=0;i--){
-    const el=document.createElement('div');
-    el.className='month-day other-month';
-    el.innerHTML=`<div class="day-num">${daysInPrevMonth-i}</div>`;
-    grid.appendChild(el);
-  }
-  
-  // 本月日期
+  const grid=document.getElementById('month-grid');
+  grid.innerHTML='';
+  const weekDays=['一','二','三','四','五','六','日'];
+  weekDays.forEach(day=>{const el=document.createElement('div');el.className='month-weekday';el.textContent=day;grid.appendChild(el);});
+
+  for(let i=adjustedFirstDay-1;i>=0;i--){const el=document.createElement('div');el.className='month-day other-month';el.innerHTML=`<div class="day-num">${daysInPrevMonth-i}</div>`;grid.appendChild(el);}
+
   const now=new Date();
   for(let d=1;d<=daysInMonth;d++){
     const date=new Date(year,month,d);
@@ -962,80 +1001,82 @@ function renderMonth(){
     const hol=holidays[dateStr];
     const isToday=now.toDateString()===date.toDateString();
     const dow=date.getDay();
-    const isWeekend = dow === 0 || dow === 6;
+    const isWeekend=dow===0||dow===6;
     const hasClass=classes.some(c=>c.days.includes(dow===0?6:dow-1));
-    const dayHw=homework.filter(h=>h.due===dateStr);
-    
+    const hwInfo=hwRanges[dateStr];
+    const hasHw=hwInfo&&hwInfo.hws.length>0;
+    const undoneHws=hwInfo?hwInfo.hws.filter(h=>!h.done):[];
+
+    let cls='month-day';
+    if(isToday)cls+=' today';
+    if(hol)cls+=' holiday';
+    else if(isWeekend)cls+=' holiday';
+    else if(hasClass)cls+=' has-class';
+    if(hasHw&&!hol&&!isWeekend&&undoneHws.length)cls+=' hw-range';
+    if(hwInfo?.isStart&&undoneHws.length)cls+=' hw-start';
+    if(hwInfo?.isEnd&&undoneHws.length)cls+=' hw-end';
+
     const el=document.createElement('div');
-    el.className='month-day'+(isToday?' today':'')+(hol?' holiday':'')+(hasClass&&!hol&&!isWeekend?' has-class':'')+(isWeekend && !hol ? ' holiday' : '');
+    el.className=cls;
     el.innerHTML=`<div class="day-num">${d}</div>`;
-    if(hol){
-      el.innerHTML+=`<div class="day-badge">${hol.type==='holiday'?'假':'補'}</div>`;
-    } else if(isWeekend){
-      el.innerHTML+=`<div class="day-badge">假</div>`;
-    }
-    // Homework dots
-    if(dayHw.length){
+    if(hol){el.innerHTML+=`<div class="day-badge">${hol.type==='holiday'?'假':'補'}</div>`;}
+    else if(isWeekend){el.innerHTML+=`<div class="day-badge">假</div>`;}
+
+    // HW dots (undone only)
+    if(hasHw&&undoneHws.length){
       const dotsDiv=document.createElement('div');dotsDiv.className='day-dots';
-      dayHw.slice(0,3).forEach(h=>{
-        const dot=document.createElement('div');
-        dot.className='hw-dot'+(h.done?' done-dot':'');
+      undoneHws.slice(0,3).forEach(h=>{
+        const c=classes.find(x=>x.name===h.subj);
+        const col=c?COLORS.find(x=>x.key===c.color)?.dot:'#E24B4A';
+        const dot=document.createElement('div');dot.className='hw-dot';dot.style.background=col||'#E24B4A';
         dotsDiv.appendChild(dot);
       });
       el.appendChild(dotsDiv);
-      if(dayHw.length>1){
-        const cnt=document.createElement('div');cnt.className='hw-count';cnt.textContent=dayHw.length;el.appendChild(cnt);
-      }
+      if(undoneHws.length>3){const cnt=document.createElement('div');cnt.className='hw-count';cnt.textContent=undoneHws.length;el.appendChild(cnt);}
     }
-    el.onclick=()=>{
-      // Show hw popup then open holiday modal
-      showDayPopup(dateStr,dayHw,date);
-    };
+
+    el.onclick=()=>showMonthDayDetail(dateStr,date,hwInfo?hwInfo.hws:[]);
     grid.appendChild(el);
   }
-  
-  // 下月份的日期
+
   const remainingCells=42-(adjustedFirstDay+daysInMonth);
-  for(let i=1;i<=remainingCells;i++){
-    const el=document.createElement('div');
-    el.className='month-day other-month';
-    el.innerHTML=`<div class="day-num">${i}</div>`;
-    grid.appendChild(el);
-  }
+  for(let i=1;i<=remainingCells;i++){const el=document.createElement('div');el.className='month-day other-month';el.innerHTML=`<div class="day-num">${i}</div>`;grid.appendChild(el);}
+
+  // Render holidays-list area
+  document.getElementById('holidays-list').innerHTML='';
 }
 
-// Day popup for month view
-function showDayPopup(dateStr,dayHw,date){
-  const existing=document.getElementById('day-popup');
-  if(existing)existing.remove();
-  const holidaysList=document.getElementById('holidays-list');
-  holidaysList.innerHTML='';
-  if(dayHw.length){
-    const popup=document.createElement('div');popup.id='day-popup';popup.className='hw-day-popup';
-    const title=document.createElement('div');title.className='hw-day-popup-title';
-    title.textContent=(date.getMonth()+1)+'月'+date.getDate()+'日的作業（'+dayHw.length+'件）';
-    popup.appendChild(title);
-    dayHw.forEach(h=>{
-      const row=document.createElement('div');row.className='hw-day-item';
-      const cls=classes.find(c=>c.name===h.subj);const col=cls?COLORS.find(x=>x.key===cls.color)?.dot:'#888';
-      row.innerHTML=`<div class="hw-day-dot" style="background:${col}"></div><span style="${h.done?'text-decoration:line-through;color:var(--text3);':''}">${h.name}</span><span style="margin-left:auto;font-size:10px;color:var(--text3);">${h.subj}${h.done?' ✓':''}</span>`;
-      row.onclick=()=>{toggleHw(h.id);renderMonth();};
-      popup.appendChild(row);
-    });
-    const addBtn=document.createElement('button');addBtn.className='mbtn-s';
-    addBtn.style.cssText='width:100%;margin-top:8px;padding:7px;font-size:12px;';
-    addBtn.textContent='新增作業到這天';
-    addBtn.onclick=()=>{
-      const t=new Date(dateStr);
-      const y=t.getFullYear(),m=String(t.getMonth()+1).padStart(2,'0'),d=String(t.getDate()).padStart(2,'0');
-      openHwModal();setTimeout(()=>{document.getElementById('hw-due').value=y+'-'+m+'-'+d;},100);
-    };
-    popup.appendChild(addBtn);
-    holidaysList.appendChild(popup);
+function showMonthDayDetail(dateStr,date,dayHws){
+  const hl=document.getElementById('holidays-list');hl.innerHTML='';
+  if(!dayHws.length){
+    document.getElementById('hol-date').value=dateStr;
+    openHolidayModal();return;
   }
-  // Also allow opening holiday modal
-  document.getElementById('hol-date').value=dateStr;
-  if(!dayHw.length)openHolidayModal();
+  const popup=document.createElement('div');
+  popup.style.cssText='background:var(--bg);border:0.5px solid var(--border2);border-radius:12px;padding:10px 12px;margin:0 16px 8px;';
+  const title=document.createElement('div');
+  title.style.cssText='font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;';
+  title.innerHTML=`<span>${date.getMonth()+1}月${date.getDate()}日的作業</span>`;
+  const addBtn=document.createElement('button');
+  addBtn.textContent='+新增';
+  addBtn.style.cssText='border:none;background:transparent;color:var(--text2);font-size:11px;cursor:pointer;';
+  addBtn.onclick=()=>{openHwModal();setTimeout(()=>{document.getElementById('hw-due').value=dateStr;},80);};
+  title.appendChild(addBtn);
+  popup.appendChild(title);
+  dayHws.forEach(h=>{
+    const c=classes.find(x=>x.name===h.subj);
+    const col=c?COLORS.find(x=>x.key===c.color)?.dot:'#888';
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px;cursor:pointer;';
+    row.innerHTML=`<div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0;"></div><span style="${h.done?'text-decoration:line-through;color:var(--text3);':''};flex:1;">${h.name}</span><span style="font-size:10px;color:var(--text3);">${h.done?'✓':'待辦'}</span>`;
+    row.onclick=()=>{toggleHw(h.id);renderMonth();showMonthDayDetail(dateStr,date,homework.filter(x=>{const s=x.startDate?new Date(x.startDate):new Date(x.due||'9999');const e=new Date(x.due||'9999');const cur=new Date(dateStr);return cur>=s&&cur<=e;}));};
+    const editBtn=document.createElement('button');
+    editBtn.textContent='編輯';editBtn.style.cssText='border:none;background:transparent;color:var(--text2);font-size:11px;cursor:pointer;padding:0 4px;flex-shrink:0;';
+    editBtn.onclick=(e)=>{e.stopPropagation();openHwModal(h.id);};
+    row.appendChild(editBtn);
+    popup.appendChild(row);
+  });
+  hl.appendChild(popup);
 }
 
 // Export
@@ -1105,26 +1146,21 @@ function updateSemesterList(){
   const list=document.getElementById('semester-list');
   list.innerHTML='';
   Object.keys(semesters).forEach(k=>{
+    const isCurrent=k===currentSemester;
     const item=document.createElement('div');
-    item.style.cssText='padding:8px 10px;margin-bottom:6px;background:var(--bg);border-radius:8px;font-size:12px;display:flex;flex-direction:column;gap:6px;';
+    item.style.cssText='padding:8px 10px;margin-bottom:8px;background:var(--bg);border-radius:10px;font-size:12px;display:flex;flex-direction:column;gap:6px;border:0.5px solid '+(isCurrent?'var(--accent)':'var(--border)')+';';
 
     const topRow=document.createElement('div');
     topRow.style.cssText='display:flex;justify-content:space-between;align-items:center;gap:8px;';
-    const title=document.createElement('div');
+    const titleEl=document.createElement('div');
     const courseCount=semesters[k].courses?.length||0;
-    title.innerHTML=`<strong>${k}</strong> (${courseCount}門課)`;
-    title.style.cssText='cursor:pointer;flex:1;';
-    title.onclick=()=>selectSemester(k);
-    topRow.appendChild(title);
+    titleEl.innerHTML=`<strong>${k}</strong>${isCurrent?' <span style="font-size:10px;background:var(--accent);color:var(--accent-fg);padding:1px 5px;border-radius:4px;">目前</span>':''} <span style="color:var(--text3);font-weight:400;">${courseCount}門課</span>`;
+    titleEl.style.cssText='cursor:pointer;flex:1;';
+    titleEl.onclick=()=>selectSemester(k);
+    topRow.appendChild(titleEl);
 
     const actions=document.createElement('div');
-    actions.style.cssText='display:flex;gap:6px;flex-shrink:0;';
-    const blankBtn=document.createElement('button');
-    blankBtn.className='mbtn-c';
-    blankBtn.textContent='空白課表';
-    blankBtn.style.cssText='padding:4px 8px;font-size:11px;';
-    blankBtn.onclick=(e)=>{e.stopPropagation();loadBlankSchedule(k);};
-    actions.appendChild(blankBtn);
+    actions.style.cssText='display:flex;gap:4px;flex-shrink:0;';
 
     const editBtn=document.createElement('button');
     editBtn.className='mbtn-s';
@@ -1137,13 +1173,41 @@ function updateSemesterList(){
       const delBtn=document.createElement('button');
       delBtn.className='mbtn-c';
       delBtn.textContent='刪除';
-      delBtn.style.cssText='padding:4px 8px;font-size:11px;background:#E24B4A;color:#fff;';
+      delBtn.style.cssText='padding:4px 8px;font-size:11px;background:#E24B4A;color:#fff;border:none;';
       delBtn.onclick=(e)=>{e.stopPropagation();deleteSemesterByName(k);};
       actions.appendChild(delBtn);
     }
-
     topRow.appendChild(actions);
     item.appendChild(topRow);
+
+    // Course list preview
+    const courses=semesters[k].courses||[];
+    if(courses.length){
+      const courseList=document.createElement('div');
+      courseList.className='sem-course-list';
+      courses.forEach((c,ci)=>{
+        const col=COLORS.find(x=>x.key===c.color);
+        const row=document.createElement('div');
+        row.className='sem-course-item';
+        const dayLabels=c.days.map(d=>DAYS[d]).join('');
+        row.innerHTML=`
+          <div class="sem-course-dot" style="background:${col?col.dot:'#888'}"></div>
+          <span class="sem-course-name">${c.name}</span>
+          <span class="sem-course-meta">${c.room} · 週${dayLabels} 第${c.start+1}${c.start!==c.end?'–'+(c.end+1):''}節${c.customStartTime?` ${c.customStartTime}–${c.customEndTime||''}`:''}</span>`;
+        // Edit + delete buttons (only for current semester)
+        if(isCurrent){
+          const rowBtns=document.createElement('div');rowBtns.style.cssText='display:flex;gap:2px;flex-shrink:0;';
+          const eBtn=document.createElement('button');eBtn.className='sem-course-edit';eBtn.textContent='編輯';
+          eBtn.onclick=(e)=>{e.stopPropagation();closeModal('modal-semester');setTimeout(()=>openEditClassModal(classes[ci]),100);};
+          const dBtn=document.createElement('button');dBtn.className='sem-course-del';dBtn.textContent='×';
+          dBtn.onclick=(e)=>{e.stopPropagation();if(confirm('刪除「'+c.name+'」？')){classes.splice(ci,1);saveSemester();updateSemesterList();renderGrid();}};
+          rowBtns.appendChild(eBtn);rowBtns.appendChild(dBtn);
+          row.appendChild(rowBtns);
+        }
+        courseList.appendChild(row);
+      });
+      item.appendChild(courseList);
+    }
     list.appendChild(item);
   });
 }
@@ -1223,6 +1287,7 @@ function deleteSemesterByName(name){
   delete semesters[name];
   if(currentSemester===name){
     currentSemester='預設';
+    sv('currentSemester',currentSemester);
     classes=semesters['預設'].courses;
   }
   sv('semesters',semesters);
@@ -1233,6 +1298,7 @@ function deleteSemesterByName(name){
 // Periods
 function openPeriodModal(){
   document.getElementById('modal-periods').classList.add('show');
+  syncCustomTimeToggle();
   buildPeriodForm();
 }
 function buildPeriodForm(){
@@ -1388,31 +1454,9 @@ function buildPeriodForm(){
   lunchTimeInputs.appendChild(lunchTimeInput);
   lunchTimeRow.appendChild(lunchTimeInputs);
   lunchSection.appendChild(lunchTimeRow);
-
-  // Lunch duration row
-  const lunchDurRow=document.createElement('div');
-  lunchDurRow.id='lunch-dur-row';
-  lunchDurRow.style.cssText='margin-bottom:12px;'+(params.enableLunch===false?'display:none;':'');
-  const lunchDurLabel=document.createElement('label');
-  lunchDurLabel.className='flabel';
-  lunchDurLabel.textContent='午休時長';
-  lunchDurRow.appendChild(lunchDurLabel);
-  const lunchDurInputs=document.createElement('div');
-  lunchDurInputs.style.cssText='display:flex;gap:8px;align-items:center;';
-  const lunchDurSel=document.createElement('select');
-  lunchDurSel.id='lunch-duration';
-  lunchDurSel.className='finput';
-  const lunchDurOptions=[{v:30,l:'30 分鐘'},{v:40,l:'40 分鐘'},{v:45,l:'45 分鐘'},{v:60,l:'1 小時'},{v:70,l:'1 小時 10 分'},{v:80,l:'1 小時 20 分'},{v:90,l:'1 小時 30 分'},{v:120,l:'2 小時'}];
-  const savedLunchDur=params.lunchDurationMin||60;
-  lunchDurOptions.forEach(o=>{const opt=document.createElement('option');opt.value=o.v;opt.textContent=o.l;if(o.v===savedLunchDur)opt.selected=true;lunchDurSel.appendChild(opt);});
-  lunchDurSel.oninput=()=>updatePeriodPreview();
-  lunchDurInputs.appendChild(lunchDurSel);
-  lunchDurRow.appendChild(lunchDurInputs);
-  lunchSection.appendChild(lunchDurRow);
-
-  // Toggle lunch rows visibility
-  lunchToggle.onclick=(e)=>{e.preventDefault();lunchToggle.classList.toggle('on');const on=lunchToggle.classList.contains('on');document.getElementById('lunch-time-row').style.display=on?'':'none';document.getElementById('lunch-dur-row').style.display=on?'':'none';updatePeriodPreview();};
   list.appendChild(lunchSection);
+  
+  const morningRow=document.createElement('div');
   morningRow.style.cssText='display:none;';
   const morningInput=document.createElement('input');
   morningInput.type='hidden';
@@ -1527,7 +1571,6 @@ function updatePeriodPreview(){
   const numPeriods=parseInt(document.getElementById('period-num').value)||8;
   const enableLunch=document.getElementById('lunch-toggle')?.classList.contains('on');
   const lunchTime=parseInt(document.getElementById('lunch-time')?.value||4);
-  const lunchDur=parseInt(document.getElementById('lunch-duration')?.value||60);
   
   const preview=[];
   let totalMin=startHour*60+startMin;
@@ -1535,20 +1578,13 @@ function updatePeriodPreview(){
     const h=Math.floor(totalMin/60);
     const m=totalMin%60;
     const timeStr=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
-    const endMin=totalMin+duration;
-    const endStr=String(Math.floor(endMin/60)).padStart(2,'0')+':'+String(endMin%60).padStart(2,'0');
-    preview.push('第'+(i+1)+'節 '+timeStr+'–'+endStr);
+    preview.push('第'+(i+1)+'節 '+timeStr);
     if(enableLunch && i===lunchTime-1 && lunchTime<numPeriods){
-      const lunchStartH=Math.floor(endMin/60),lunchStartM=endMin%60;
-      const lunchEndMin=endMin+lunchDur;
-      const lunchEndStr=String(Math.floor(lunchEndMin/60)).padStart(2,'0')+':'+String(lunchEndMin%60).padStart(2,'0');
-      preview.push('午休 '+String(lunchStartH).padStart(2,'0')+':'+String(lunchStartM).padStart(2,'0')+'–'+lunchEndStr+' ('+lunchDur+'分鐘)');
-      totalMin=lunchEndMin;
-    } else {
-      totalMin+=duration+breakMin;
+      preview.push('午休');
     }
+    totalMin+=duration+breakMin;
   }
-  document.getElementById('period-preview').innerHTML=preview.map(p=>p.startsWith('午休')?`<span style="color:var(--text2);font-style:italic;">${p}</span>`:p).join('<br>');
+  document.getElementById('period-preview').textContent=preview.join(' · ');
 }
 
 function savePeriods(){
@@ -1559,7 +1595,6 @@ function savePeriods(){
   const numPeriods=parseInt(document.getElementById('period-num').value);
   const enableLunch=document.getElementById('lunch-toggle')?.classList.contains('on');
   const lunchTime=parseInt(document.getElementById('lunch-time')?.value||4);
-  const lunchDurationMin=parseInt(document.getElementById('lunch-duration')?.value||60);
   
   if(isNaN(startHour)||isNaN(startMin)||isNaN(duration)||isNaN(breakMin)||isNaN(numPeriods)||startHour<0||startHour>23||startMin<0||startMin>59||duration<20||duration>120||breakMin<0||breakMin>60||numPeriods<1||numPeriods>12){
     alert('請輸入有效的時間計量！');
@@ -1575,7 +1610,7 @@ function savePeriods(){
     newPeriods.push({label:'第'+(i+1)+'節',time:timeStr});
   }
   
-  PERIOD_SETTINGS={startHour,startMin,durationMin:duration,breakMin,numPeriods,morningCount:lunchTime,enableLunch,lunchDurationMin};
+  PERIOD_SETTINGS={startHour,startMin,durationMin:duration,breakMin,numPeriods,morningCount:lunchTime,enableLunch};
   PERIODS=newPeriods;
   
   sv('periodSettings',PERIOD_SETTINGS);
