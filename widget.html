@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<meta name="theme-color" content="#111111"/>
+<meta name="theme-color" content="#0a0a0f"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black"/>
-<meta name="apple-mobile-web-app-title" content="今日課表"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="今日課"/>
 <title>今日課表</title>
 <link rel="manifest" id="mf"/>
 <style>
@@ -15,165 +15,185 @@
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
 }
-html,body{
-  height:100%;
-  font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Hiragino Sans GB',sans-serif;
-  background:#111;color:#f2f2f7;
-  overflow:hidden;
-}
-.app{
-  display:flex;flex-direction:column;height:100%;
-  max-width:430px;margin:0 auto;
-  padding:calc(var(--safe-top)+16px) 16px calc(var(--safe-bottom)+16px);
-}
-.top-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
-.day-label{font-size:13px;font-weight:500;color:#aeaeb2;}
-.date-label{font-size:28px;font-weight:700;color:#f2f2f7;line-height:1.1;}
-.open-btn{
-  font-size:12px;color:#aeaeb2;
-  background:rgba(255,255,255,0.1);
-  border:none;border-radius:14px;padding:5px 12px;cursor:pointer;
-  font-family:inherit;
-  text-decoration:none;display:flex;align-items:center;gap:4px;
-}
-.classes-list{flex:1;display:flex;flex-direction:column;gap:8px;overflow-y:auto;}
-.class-row{
-  display:flex;align-items:stretch;gap:10px;
-  background:rgba(255,255,255,0.07);
-  border-radius:14px;padding:12px 14px;
-}
-.class-row.current{background:rgba(255,255,255,0.13);border:0.5px solid rgba(255,255,255,0.2);}
-.class-row.done{opacity:.45;}
-.time-col{display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:44px;flex-shrink:0;}
-.time-start{font-size:14px;font-weight:600;}
-.time-end{font-size:11px;color:#636366;}
-.divider{width:0.5px;background:rgba(255,255,255,0.15);margin:0 2px;}
-.info-col{flex:1;display:flex;flex-direction:column;gap:3px;justify-content:center;}
-.cls-name{font-size:14px;font-weight:600;}
-.cls-room{font-size:12px;color:#aeaeb2;}
-.color-bar{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;}
-.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#636366;}
-.empty-icon{font-size:40px;opacity:.4;}
-.empty-text{font-size:15px;}
-.now-line{height:1px;background:rgba(255,59,48,0.6);margin:0 -2px;position:relative;}
-.now-dot{width:7px;height:7px;background:#FF3B30;border-radius:50%;position:absolute;top:-3px;left:-2px;}
-.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px;}
-.status-ongoing{background:#30D158;}
-.status-upcoming{background:#636366;}
-.status-done{background:transparent;border:1px solid #636366;}
-
-/* Color bars */
-.bar-blue{background:#378ADD;} .bar-purple{background:#7F77DD;} .bar-green{background:#639922;}
-.bar-amber{background:#BA7517;} .bar-red{background:#E24B4A;} .bar-teal{background:#1D9E75;}
-.bar-pink{background:#D4537E;} .bar-orange{background:#FF9500;} .bar-yellow{background:#FFCC00;}
-.bar-cyan{background:#00BCD4;} .bar-gray{background:#9E9E9E;} .bar-indigo{background:#3F51B5;}
-.bar-lime{background:#CDDC39;} .bar-brown{background:#795548;}
+html,body{height:100%;min-height:100%;background:#0a0a0f;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'PingFang TC',sans-serif;overflow-x:hidden;}
+.shell{min-height:100vh;padding:calc(var(--safe-top)+16px) 16px calc(var(--safe-bottom)+16px);display:flex;flex-direction:column;gap:10px;max-width:430px;margin:0 auto;}
+.hd{display:flex;justify-content:space-between;align-items:flex-start;}
+.hd-day{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:2px;}
+.hd-date{font-size:30px;font-weight:700;letter-spacing:-.5px;line-height:1;}
+.open-app{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.07);border:0.5px solid rgba(255,255,255,.1);border-radius:20px;padding:5px 12px;font-size:12px;color:rgba(255,255,255,.55);text-decoration:none;}
+.sem-tag{font-size:10px;color:rgba(255,255,255,.25);margin-top:3px;text-align:right;}
+.sec-lbl{font-size:9px;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-bottom:2px;}
+.classes-wrap,.hw-wrap{display:flex;flex-direction:column;gap:5px;}
+.cls-card{display:flex;align-items:stretch;gap:0;background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.08);border-radius:13px;overflow:hidden;padding:10px 12px;}
+.cls-card.now{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.16);}
+.cls-card.done{opacity:.35;}
+.cls-bar{width:3px;border-radius:2px;align-self:stretch;margin-right:10px;flex-shrink:0;}
+.cls-left{display:flex;flex-direction:column;gap:1px;min-width:46px;flex-shrink:0;}
+.cls-ts{font-size:13px;font-weight:600;}
+.cls-te{font-size:10px;color:rgba(255,255,255,.45);}
+.cls-sep{width:.5px;background:rgba(255,255,255,.08);margin:0 10px;}
+.cls-body{flex:1;display:flex;flex-direction:column;gap:2px;justify-content:center;}
+.cls-name{font-size:13px;font-weight:600;}
+.cls-room{font-size:11px;color:rgba(255,255,255,.45);}
+.cls-right{display:flex;align-items:center;margin-left:8px;flex-shrink:0;}
+.badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap;}
+.badge-now{background:rgba(48,209,88,.2);color:#30D158;}
+.badge-soon{background:rgba(10,132,255,.2);color:#0A84FF;}
+.prog-wrap{height:2px;background:rgba(255,255,255,.1);border-radius:1px;margin-top:5px;}
+.prog-bar{height:2px;border-radius:1px;background:#30D158;}
+.empty-card{background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.08);border-radius:13px;padding:18px;display:flex;align-items:center;justify-content:center;font-size:14px;color:rgba(255,255,255,.4);}
+.hw-card{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 12px;}
+.hw-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.hw-name{font-size:12px;flex:1;}
+.hw-sub{font-size:10px;color:rgba(255,255,255,.35);margin-left:5px;}
+.hw-due{font-size:10px;color:rgba(255,255,255,.4);white-space:nowrap;}
+.hw-due.urgent{color:#FF453A;}
+.footer{margin-top:auto;padding-top:8px;display:flex;justify-content:space-between;align-items:center;}
+.footer-txt{font-size:10px;color:rgba(255,255,255,.2);}
+.refresh{border:none;background:transparent;color:rgba(255,255,255,.25);font-size:10px;cursor:pointer;padding:4px;}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="top-row">
-    <div>
-      <div class="day-label" id="day-label"></div>
-      <div class="date-label" id="date-label"></div>
-    </div>
-    <a class="open-btn" href="./index.html">
-      <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="12" height="12" rx="3"/><path d="M5 7h4M7 5l2 2-2 2"/></svg>
-      開啟課表
-    </a>
-  </div>
-  <div class="classes-list" id="classes-list"></div>
+<div class="shell" id="shell">
+  <div style="color:rgba(255,255,255,.3);font-size:14px;text-align:center;padding:50px 0">載入中…</div>
 </div>
-
 <script>
-// Manifest & PWA
-function makeIcon(sz){
+function mkIcon(sz){
   const c=document.createElement('canvas');c.width=c.height=sz;
   const x=c.getContext('2d');
-  x.fillStyle='#111';x.beginPath();x.roundRect(0,0,sz,sz,sz*.18);x.fill();
-  // Clock icon
-  x.strokeStyle='#fff';x.lineWidth=sz*.06;x.beginPath();x.arc(sz/2,sz/2,sz*.28,0,Math.PI*2);x.stroke();
-  x.beginPath();x.moveTo(sz/2,sz*.3);x.lineTo(sz/2,sz/2);x.lineTo(sz*.65,sz*.6);x.stroke();
+  x.fillStyle='#0a0a0f';x.beginPath();x.roundRect(0,0,sz,sz,sz*.2);x.fill();
+  x.strokeStyle='rgba(255,255,255,.6)';x.lineWidth=sz*.055;
+  x.beginPath();x.moveTo(sz*.24,sz*.52);x.lineTo(sz*.44,sz*.7);x.lineTo(sz*.76,sz*.34);x.stroke();
   return c.toDataURL();
 }
-const mfd={name:'今日課表',short_name:'今日課',start_url:'./widget.html',display:'standalone',background_color:'#111111',theme_color:'#111111',orientation:'portrait',icons:[{src:makeIcon(192),sizes:'192x192',type:'image/png',purpose:'any maskable'},{src:makeIcon(512),sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+const mfd={name:'今日課表',short_name:'今日課',start_url:'./widget.html',display:'standalone',background_color:'#0a0a0f',theme_color:'#0a0a0f',orientation:'portrait',icons:[{src:mkIcon(192),sizes:'192x192',type:'image/png',purpose:'any maskable'},{src:mkIcon(512),sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
 document.getElementById('mf').href=URL.createObjectURL(new Blob([JSON.stringify(mfd)],{type:'application/manifest+json'}));
-
-// Read data from shared localStorage (same origin as index.html)
-function ld(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
-
-const DAYS_ZH=['日','一','二','三','四','五','六'];
-const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-const COLORS_DOT={blue:'#378ADD',purple:'#7F77DD',green:'#639922',amber:'#BA7517',red:'#E24B4A',teal:'#1D9E75',pink:'#D4537E',orange:'#FF9500',yellow:'#FFCC00',cyan:'#00BCD4',gray:'#9E9E9E',indigo:'#3F51B5',lime:'#CDDC39',brown:'#795548'};
-
-const now=new Date();
-const dow=now.getDay(); // 0=Sun,6=Sat
-const dayIdx=dow===0?6:dow-1; // 0=Mon…6=Sun
-
-// Header
-document.getElementById('day-label').textContent='星期'+DAYS_ZH[dow]+' · '+MONTHS[now.getMonth()];
-document.getElementById('date-label').textContent=now.getDate()+'日';
-
-// Load schedule
-const semesters=ld('semesters',{});
-const currentSemester=ld('currentSemester','預設');
-const semData=semesters[currentSemester]||semesters['預設']||{courses:[]};
-const classes=semData.courses||[];
-
-const DEFAULT_PERIODS=[
-  {label:'第1節',time:'08:00'},{label:'第2節',time:'08:50'},{label:'第3節',time:'09:40'},
-  {label:'第4節',time:'10:30'},{label:'第5節',time:'11:20'},{label:'第6節',time:'12:10'},
-  {label:'第7節',time:'13:00'},{label:'第8節',time:'13:50'},
-];
-const PERIODS=ld('periods',DEFAULT_PERIODS);
-
-function timeToMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
-const nowMin=now.getHours()*60+now.getMinutes();
-
-const todayClasses=classes
-  .filter(c=>c.days.includes(dayIdx))
-  .map(c=>({
-    ...c,
-    startTime:c.customStartTime||PERIODS[c.start]?.time||'00:00',
-    endTime:c.customEndTime||PERIODS[c.end]?.time||'00:00',
-    startMin:timeToMin(c.customStartTime||PERIODS[c.start]?.time||'00:00'),
-    endMin:timeToMin(c.customEndTime||PERIODS[c.end]?.time||'00:00')+50,
-  }))
-  .sort((a,b)=>a.startMin-b.startMin);
-
-const list=document.getElementById('classes-list');
-
-if(!todayClasses.length){
-  list.innerHTML=`
-    <div class="empty-state">
-      <div class="empty-icon">🎉</div>
-      <div class="empty-text">${dow===0||dow===6?'今天是假日':'今天沒有課'}</div>
-    </div>`;
-} else {
-  todayClasses.forEach((c,i)=>{
-    const isDone=nowMin>c.endMin;
-    const isCurrent=nowMin>=c.startMin&&nowMin<=c.endMin;
-    const row=document.createElement('div');
-    row.className='class-row'+(isCurrent?' current':'')+(isDone?' done':'');
-    const dotColor=COLORS_DOT[c.color]||'#888';
-    row.innerHTML=`
-      <div class="color-bar bar-${c.color}"></div>
-      <div class="time-col">
-        <span class="time-start">${c.startTime}</span>
-        <span class="time-end">${c.endTime}</span>
-      </div>
-      <div class="divider"></div>
-      <div class="info-col">
-        <div class="cls-name">${c.name}</div>
-        <div class="cls-room">${c.room}</div>
-      </div>
-      <div class="status-dot ${isCurrent?'status-ongoing':isDone?'status-done':'status-upcoming'}"></div>`;
-    list.appendChild(row);
-  });
+if('serviceWorker' in navigator){
+  const sw=`self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',()=>self.clients.claim());self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).catch(()=>new Response(''))));`;
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'text/javascript'}))).catch(()=>{});
 }
 
-// Auto-refresh every minute
-setTimeout(()=>location.reload(),60000);
+function ld(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
+function t2m(t){if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m;}
+function m2s(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+function dkey(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+
+const CDOTS={blue:'#378ADD',purple:'#7F77DD',green:'#639922',amber:'#BA7517',red:'#E24B4A',teal:'#1D9E75',pink:'#D4537E',orange:'#FF9500',yellow:'#FFCC00',cyan:'#00BCD4',gray:'#9E9E9E',indigo:'#3F51B5',lime:'#CDDC39',brown:'#795548'};
+const DAYSZ=['日','一','二','三','四','五','六'];
+const DEFP=[{time:'08:00'},{time:'08:50'},{time:'09:40'},{time:'10:30'},{time:'11:20'},{time:'12:10'},{time:'13:00'},{time:'13:50'}];
+
+let refreshTimer=null;
+
+function render(){
+  if(refreshTimer)clearTimeout(refreshTimer);
+  const now=new Date();
+  const dow=now.getDay();
+  const dayIdx=dow===0?6:dow-1;
+  const nowMin=now.getHours()*60+now.getMinutes();
+
+  const sems=ld('semesters',{});
+  const curSem=ld('currentSemester','預設');
+  const semData=sems[curSem]||sems['預設']||{courses:[]};
+  const classes=semData.courses||[];
+  const periods=ld('periods',DEFP);
+  const ps=ld('periodSettings',{durationMin:50});
+  const hw=ld('hw',[]);
+
+  const todayC=classes
+    .filter(c=>c.days&&c.days.includes(dayIdx))
+    .map(c=>{
+      const st=c.customStartTime||periods[c.start]?.time||'00:00';
+      const et=c.customEndTime||periods[c.end]?.time||'00:00';
+      const sm=t2m(st);
+      const em=t2m(et)+(c.customEndTime?0:ps.durationMin||50);
+      return{...c,st,et:m2s(em),sm,em};
+    })
+    .sort((a,b)=>a.sm-b.sm);
+
+  const soon7=new Date(now);soon7.setDate(soon7.getDate()+7);
+  const upHw=hw
+    .filter(h=>!h.done&&h.due&&new Date(h.due+'T00:00:00')<=soon7)
+    .sort((a,b)=>a.due.localeCompare(b.due))
+    .slice(0,3);
+
+  const shell=document.getElementById('shell');
+  shell.innerHTML='';
+
+  // Header
+  const hd=document.createElement('div');hd.className='hd';
+  hd.innerHTML=`
+    <div>
+      <div class="hd-day">星期${DAYSZ[dow]} · ${now.getMonth()+1}月${now.getDate()}日</div>
+      <div class="hd-date">${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+      <a class="open-app" href="./index.html">
+        <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="12" height="12" rx="3"/><path d="M5 7h4M7 5l2 2-2 2"/></svg>
+        開啟課表
+      </a>
+      <div class="sem-tag">${curSem}</div>
+    </div>`;
+  shell.appendChild(hd);
+
+  // Classes
+  const lbl=document.createElement('div');lbl.className='sec-lbl';lbl.textContent='今天的課';shell.appendChild(lbl);
+  const cw=document.createElement('div');cw.className='classes-wrap';
+  if(!todayC.length){
+    cw.innerHTML=`<div class="empty-card">${dow===0||dow===6?'今天是假日 🎉':'今天沒有課 🎉'}</div>`;
+  } else {
+    todayC.forEach(c=>{
+      const done=nowMin>c.em;
+      const active=nowMin>=c.sm&&nowMin<=c.em;
+      const soon=!done&&!active&&c.sm-nowMin<=30&&c.sm>nowMin;
+      const pct=active?Math.min(100,Math.round(((nowMin-c.sm)/(c.em-c.sm))*100)):0;
+      const dot=CDOTS[c.color]||'#888';
+      const card=document.createElement('div');
+      card.className='cls-card'+(active?' now':done?' done':'');
+      card.innerHTML=`
+        <div class="cls-bar" style="background:${dot}"></div>
+        <div class="cls-left"><div class="cls-ts">${c.st}</div><div class="cls-te">${c.et}</div></div>
+        <div class="cls-sep"></div>
+        <div class="cls-body">
+          <div class="cls-name">${c.name}</div>
+          <div class="cls-room">${c.room}</div>
+          ${active?`<div class="prog-wrap"><div class="prog-bar" style="width:${pct}%"></div></div>`:''}
+        </div>
+        <div class="cls-right">
+          ${active?'<span class="badge badge-now">上課中</span>':soon?`<span class="badge badge-soon">${c.sm-nowMin}分後</span>`:''}
+        </div>`;
+      cw.appendChild(card);
+    });
+  }
+  shell.appendChild(cw);
+
+  // Upcoming HW
+  if(upHw.length){
+    const hl=document.createElement('div');hl.className='sec-lbl';hl.style.marginTop='4px';hl.textContent='近期作業';shell.appendChild(hl);
+    const hw2=document.createElement('div');hw2.className='hw-wrap';
+    upHw.forEach(h=>{
+      const dl=Math.ceil((new Date(h.due+'T00:00:00')-new Date(dkey(now)+'T00:00:00'))/86400000);
+      const urg=dl<=1;
+      const r=document.createElement('div');r.className='hw-card';
+      r.innerHTML=`
+        <div class="hw-dot" style="background:${urg?'#FF453A':'rgba(255,255,255,.3)'}"></div>
+        <span class="hw-name">${h.name}<span class="hw-sub">${h.subj}</span></span>
+        <span class="hw-due${urg?' urgent':''}">${dl===0?'今天':dl===1?'明天':dl+'天後'}</span>`;
+      hw2.appendChild(r);
+    });
+    shell.appendChild(hw2);
+  }
+
+  // Footer
+  const ft=document.createElement('div');ft.className='footer';
+  ft.innerHTML=`<span class="footer-txt">每分鐘自動更新</span><button class="refresh" onclick="render()">↻ 重新整理</button>`;
+  shell.appendChild(ft);
+
+  // Next update at start of next minute
+  const msToNext=60000-(now.getSeconds()*1000+now.getMilliseconds());
+  refreshTimer=setTimeout(render,msToNext);
+}
+
+render();
 </script>
 </body>
 </html>
