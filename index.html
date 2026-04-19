@@ -622,7 +622,7 @@ function getWS(){const d=new Date(BASE);d.setDate(d.getDate()+weekOffset*7);retu
 function getWeekLabel(){
   const s=getWS(),e=new Date(s);
   e.setDate(e.getDate()+(viewDays===5?4:6));
-  return(s.getMonth()+1)+'/'+s.getDate()+' – '+(e.getMonth()+1)+'/'+e.getDate();
+  return(s.getMonth()+1)+'/'+s.getDate()+' - '+(e.getMonth()+1)+'/'+e.getDate();
 }
 function changeWeek(d){weekOffset+=d;document.getElementById('week-label').textContent=getWeekLabel();renderGrid();}
 function dk(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
@@ -1194,6 +1194,12 @@ function deleteSemester(){
 function deleteSemesterByName(name){_doDeleteSemester(name);}
 
 // Periods
+function toggleLunchRow(btn){
+  btn.classList.toggle('on');
+  const on=btn.classList.contains('on');
+  document.getElementById('lunch-time-row').style.display=on?'':'none';
+  updatePeriodPreview();
+}
 function openPeriodModal(){
   document.getElementById('modal-periods').classList.add('show');
   buildPeriodForm();
@@ -1225,7 +1231,7 @@ function buildPeriodForm(){
   <div style="font-size:11px;color:var(--text2);margin-bottom:8px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;">午休設定</div>
   <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg2);border-radius:8px;margin-bottom:10px;">
     <label class="flabel" style="margin:0;font-size:14px;color:var(--text);">啟用午休分隔符</label>
-    <button class="toggle${lunchOn?' on':''}" id="lunch-toggle" onclick="(e=>{e.preventDefault();this.classList.toggle('on');const on=this.classList.contains('on');document.getElementById('lunch-time-row').style.display=on?'':'none';updatePeriodPreview();})(event)" style="margin:0;"></button>
+    <button class="toggle${lunchOn?' on':''}" id="lunch-toggle" onclick="toggleLunchRow(this)" style="margin:0;"></button>
   </div>
   <div id="lunch-time-row" style="margin-bottom:12px;${lunchDisplay}">
     <label class="flabel">午休在第幾節後</label>
@@ -1264,7 +1270,7 @@ function buildPeriodForm(){
   updatePeriodPreview();
 }
 
-(){
+function updatePeriodTime(){
   const inputs=document.querySelectorAll('#period-times-editor input');
   const newPeriods=[];
   for(let i=0;i<(PERIOD_SETTINGS?.numPeriods||8);i++){
